@@ -33,33 +33,27 @@ VALID_UNITS              = {"g", "kg", "ml", "l", "TL", "EL", "Stk.", "Prise", "
 
 # ── Prompts ────────────────────────────────────────────────────────────────────
 
-_PROMPT_BASE = """Analysiere den folgenden Rezepttext und gib AUSSCHLIESSLICH ein JSON-Objekt zurück.
-Kein Markdown, keine Codeblöcke, keine Erklärungen – nur das rohe JSON-Objekt.
+_PROMPT_BASE = """Du bist ein Rezept-Extraktor. Antworte IMMER nur mit einem validen JSON-Objekt.
+Kein Text davor oder danach, kein Markdown, keine Erklaerung – nur JSON.
+Auch wenn der Inhalt unleserlich wirkt: gib trotzdem JSON zurueck.
 
 Format:
 {
   "title": "Rezeptname",
-  "subtitle": "Gerätename oder Variante (leer lassen wenn nicht vorhanden)",
+  "subtitle": "Geraetename oder Variante (leer wenn nicht vorhanden)",
   "emoji": "passendes Emoji",
-  "category": "Kategorie (z.B. Hauptgericht, Sauce, Dessert, Beilage, Snack, Getränk)",
-  "description": "1-2 Sätze Kurzbeschreibung",
+  "category": "Kategorie",
+  "description": "1-2 Saetze Kurzbeschreibung",
   "baseServings": 4,
   "servingLabel": "Portionen",
-  "ingredients": [
-    {"amount": 200, "unit": "g", "name": "Zutatname"}
-  ],
-  "steps": [
-    {"text": "Schrittbeschreibung", "timerSec": 300}
-  ],
-  "notes": ["Tipp oder Hinweis"]
+  "ingredients": [{"amount": 200, "unit": "g", "name": "Zutatname"}],
+  "steps": [{"text": "Schrittbeschreibung", "timerSec": 300}],
+  "notes": ["Tipp"]
 }
 
-Regeln:
-- amount ist eine Zahl (0 wenn keine Mengenangabe)
-- unit MUSS eines dieser Werte sein: g, kg, ml, l, TL, EL, Stk., Prise, n.B.
-- timerSec ist die Wartezeit/Kochzeit in Sekunden (0 wenn kein Timer sinnvoll)
-- notes enthält Tipps, Variationen, Hinweise als einzelne Strings
-- Antworte NUR mit dem JSON-Objekt – kein Text davor oder danach
+Regeln: amount=Zahl, unit eines von: g kg ml l TL EL Stk. Prise n.B.
+timerSec=Sekunden (0 wenn kein Timer). Kein Rezept erkennbar: title="Kein Rezept erkannt" ingredients=[] steps=[].
+ANTWORTE NUR MIT JSON.
 
 Rezepttext:
 """
@@ -129,6 +123,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 return_response=True,
             )
             response_text = result.get("response_text", "")
+        if isinstance(response_text, list):
+            response_text = '\n'.join(str(x) for x in response_text)
             _write_parsed(hass, response_text)
         except Exception as err:
             _write_error(hass, f"LLM Vision Fehler: {err}")
@@ -150,6 +146,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ) as resp:
                 resp.raise_for_status()
                 html = await resp.text(errors="replace")
+            # JSON-LD zuerst versuchen (strukturierte Rezeptdaten)
+        jsonld = _extract_jsonld_recipe(html)
+        if jsonld:
+            text = f"Strukturierte Rezeptdaten (JSON-LD):\n{jsonld}"
+        else:
             text = _extract_text_from_html(html)[:MAX_TEXT_LENGTH]
         except Exception as err:
             _write_error(hass, f"URL abrufen fehlgeschlagen: {err}")

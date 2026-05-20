@@ -8,10 +8,19 @@
           "conversation_agent": "Konversationsagent (entity_id)",
           "llmvision_provider": "LLM Vision Anbieter"
         }
+      },
+      "reconfigure": {
+        "title": "Rezepte Import – Einstellungen anpassen",
+        "description": "Konversationsagent oder LLM Vision Anbieter aendern.",
+        "data": {
+          "conversation_agent": "Konversationsagent (entity_id)",
+          "llmvision_provider": "LLM Vision Anbieter"
+        }
       }
     },
     "abort": {
-      "already_configured": "Rezepte Import ist bereits eingerichtet."
+      "already_configured": "Rezepte Import ist bereits eingerichtet.",
+      "reconfigure_successful": "Einstellungen wurden aktualisiert."
     }
   }
 }

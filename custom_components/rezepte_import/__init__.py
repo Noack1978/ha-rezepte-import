@@ -91,26 +91,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         tmp_path = f"/tmp/rezept_import_{int(time.time())}.{ext}"
         await hass.async_add_executor_job(_write_image_file, tmp_path, image_b64)
         try:
+            # Zuerst Google Generative AI direkt versuchen (zuverlaessiger als LLM Vision)
             result = await hass.services.async_call(
-                "llmvision", "image_analyzer",
+                "google_generative_ai_conversation", "generate_content",
                 {
-                    "provider":         llmvision_prov,
-                    "message":          _PROMPT_IMAGE,
-                    "image_file":       [tmp_path],
-                    "max_tokens":       2000,
-                    "target_width":     1920,
-                    "include_filename": False,
+                    "prompt":          _PROMPT_IMAGE,
+                    "image_filename":  [tmp_path],
                 },
                 blocking=True,
                 return_response=True,
             )
-            response_text = result.get("response_text", "")
-            # LLM Vision gibt manchmal eine Liste zurueck
-            if isinstance(response_text, list):
-                response_text = "\n".join(str(x) for x in response_text)
+            response_text = result.get("text", "")
+            if not response_text:
+                raise ValueError("Leere Antwort von Google AI")
             _write_parsed(hass, response_text)
-        except Exception as err:
-            _write_error(hass, f"LLM Vision Fehler: {err}")
+        except Exception as gemini_err:
+            _LOGGER.warning("Google AI direkt fehlgeschlagen (%s), versuche LLM Vision...", gemini_err)
+            try:
+                result = await hass.services.async_call(
+                    "llmvision", "image_analyzer",
+                    {
+                        "provider":         llmvision_prov,
+                        "message":          _PROMPT_IMAGE,
+                        "image_file":       [tmp_path],
+                        "max_tokens":       2000,
+                        "target_width":     1920,
+                        "include_filename": False,
+                    },
+                    blocking=True,
+                    return_response=True,
+                )
+                response_text = result.get("response_text", "")
+                if isinstance(response_text, list):
+                    response_text = "\n".join(
+                        x.get("text", str(x)) if isinstance(x, dict) else str(x)
+                        for x in response_text
+                    )
+                _write_parsed(hass, response_text)
+            except Exception as llm_err:
+                _write_error(hass, f"Bilderkennung fehlgeschlagen: {llm_err}")
         finally:
             await hass.async_add_executor_job(_delete_file, tmp_path)
 

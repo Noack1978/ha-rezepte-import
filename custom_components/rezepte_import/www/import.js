@@ -1,14 +1,9 @@
 /**
- * Rezepte Import – UI-Erweiterung für ha-rezepte
- * Wird automatisch geladen wenn ha-rezepte-import installiert ist.
- * Benötigt globale Variablen aus index.html: HA_TOKEN, HA_URL,
- * RECIPES, saveToHA, renderHome, showView, esc, showToast,
- * fEditId, fStep, fEmoji, fIngs, fSteps, fNotes, showFStep
+ * Rezepte Import - UI-Erweiterung fuer ha-rezepte
  */
 (function () {
   'use strict';
 
-  /* ── CSS ──────────────────────────────────────────────────────────────── */
   const css = `
     .imp-modal{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
     .imp-modal.open{transform:translateY(0)}
@@ -26,7 +21,7 @@
     .imp-hint{font-size:.8rem;color:var(--text3);line-height:1.45}
     .imp-upload-label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--border);border-radius:var(--r-sm);padding:30px 20px;cursor:pointer;color:var(--text3);font-size:.88rem;text-align:center;transition:border-color .15s}
     .imp-upload-label:hover{border-color:var(--accent);color:var(--accent)}
-    .imp-upload-label .imp-upload-icon{font-size:2.2rem}
+    .imp-upload-icon{font-size:2.2rem}
     .imp-preview-img{max-height:180px;border-radius:var(--r-sm);object-fit:contain;align-self:center}
     .imp-url-input{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 13px;font-size:.91rem;font-family:'Source Sans 3',sans-serif;color:var(--text)}
     .imp-url-input:focus{outline:none;border-color:var(--accent)}
@@ -55,220 +50,167 @@
   styleEl.textContent = css;
   document.head.appendChild(styleEl);
 
-  /* ── HTML ─────────────────────────────────────────────────────────────── */
   const html = `
     <div id="imp-modal" class="imp-modal">
       <div class="imp-header">
-        <button class="btn-icon" onclick="impClose()">✕</button>
+        <button class="btn-icon" onclick="impClose()">\u2715</button>
         <h2>Rezept importieren</h2>
       </div>
       <div class="imp-body">
         <div class="imp-tabs">
-          <button class="imp-tab active" onclick="impTab(0)">✏️ Text</button>
-          <button class="imp-tab"        onclick="impTab(1)">📁 Datei</button>
-          <button class="imp-tab"        onclick="impTab(2)">🔗 Link</button>
+          <button class="imp-tab active" onclick="impTab(0)">\u270f\ufe0f Text</button>
+          <button class="imp-tab"        onclick="impTab(1)">\ud83d\udcc1 Datei</button>
+          <button class="imp-tab"        onclick="impTab(2)">\ud83d\udd17 Link</button>
         </div>
-
-        <!-- Zustand: Eingabe -->
         <div id="imp-input" class="istat on">
-          <!-- Tab 0: Text -->
           <div id="imp-panel-0" class="imp-panel active">
-            <p class="imp-hint">Rezepttext einfügen – beliebiges Format (Fließtext, strukturiert, aus Webseite kopiert …).</p>
-            <textarea id="imp-textarea" class="imp-textarea" placeholder="Rezepttext hier einfügen …"></textarea>
+            <p class="imp-hint">Rezepttext einf\u00fcgen \u2013 beliebiges Format.</p>
+            <textarea id="imp-textarea" class="imp-textarea" placeholder="Rezepttext hier einf\u00fcgen \u2026"></textarea>
           </div>
-          <!-- Tab 1: Datei -->
           <div id="imp-panel-1" class="imp-panel">
             <p class="imp-hint">TXT-Dateien werden als Text analysiert, Bilder (JPG, PNG, WEBP) via LLM Vision.</p>
             <label class="imp-upload-label" for="imp-file-input">
-              <span class="imp-upload-icon">📂</span>
-              <span id="imp-file-label">Datei auswählen oder hier ablegen</span>
+              <span class="imp-upload-icon">\ud83d\udcc2</span>
+              <span id="imp-file-label">Datei ausw\u00e4hlen oder hier ablegen</span>
             </label>
             <input id="imp-file-input" type="file" accept=".txt,image/jpeg,image/png,image/webp" style="display:none" onchange="impFileSelected(this)">
             <img id="imp-img-preview" class="imp-preview-img" style="display:none" alt="Vorschau">
           </div>
-          <!-- Tab 2: Link -->
           <div id="imp-panel-2" class="imp-panel">
-            <p class="imp-hint">URL einer Rezept-Webseite einfügen. HA ruft die Seite serverseitig ab.</p>
+            <p class="imp-hint">URL einer Rezept-Webseite einf\u00fcgen. HA ruft die Seite serverseitig ab.</p>
             <input id="imp-url" type="url" class="imp-url-input" placeholder="https://www.beispiel.de/rezept/...">
           </div>
         </div>
-
-        <!-- Zustand: Laden -->
         <div id="imp-loading" class="istat">
           <div class="imp-loading">
             <div class="imp-spinner"></div>
-            <p id="imp-loading-msg">Analysiere …</p>
+            <p id="imp-loading-msg">Analysiere \u2026</p>
           </div>
         </div>
-
-        <!-- Zustand: Ergebnis -->
         <div id="imp-result" class="istat">
-          <p style="font-size:.83rem;color:var(--text2)">Erkanntes Rezept – direkt importieren oder im Formular bearbeiten:</p>
+          <p style="font-size:.83rem;color:var(--text2)">Erkanntes Rezept \u2013 direkt importieren oder im Formular bearbeiten:</p>
           <div class="imp-result-card" id="imp-result-card"></div>
         </div>
-
-        <!-- Zustand: Fehler -->
         <div id="imp-error" class="istat">
           <div class="imp-error-box" id="imp-error-msg"></div>
         </div>
       </div>
-
       <div class="imp-footer" id="imp-footer"></div>
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', html);
 
-  /* ── Import-Button in Home-Hero einfügen ─────────────────────────────── */
+  /* Import-Button in Home-Hero einfuegen */
   const hero = document.querySelector('#home-view .home-hero > div');
   if (hero) {
     const btn = document.createElement('button');
     btn.title = 'Rezept importieren';
-    btn.textContent = '📋';
+    btn.textContent = '\ud83d\udccb';
     btn.style.cssText = 'background:rgba(255,255,255,.18);border:none;border-radius:50%;width:36px;height:36px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;margin-right:6px';
     btn.onclick = impOpen;
-    // Vor dem ⚙️-Button einfügen
     const gear = hero.querySelector('button');
     if (gear) hero.insertBefore(btn, gear);
     else hero.appendChild(btn);
   }
 
-  /* ── State ────────────────────────────────────────────────────────────── */
-  let _activeTab    = 0;
-  let _fileData     = null; // {type:'text'|'image', content, mimeType}
+  let _activeTab = 0;
+  let _fileData = null;
   let _importedRecipe = null;
 
-  /* ── Tab-Steuerung ────────────────────────────────────────────────────── */
   window.impTab = function(idx) {
     _activeTab = idx;
-    document.querySelectorAll('.imp-tab').forEach((t, i) =>
-      t.classList.toggle('active', i === idx));
-    document.querySelectorAll('.imp-panel').forEach((p, i) =>
-      p.classList.toggle('active', i === idx));
+    document.querySelectorAll('.imp-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+    document.querySelectorAll('.imp-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
     _fileData = null;
     document.getElementById('imp-img-preview').style.display = 'none';
-    document.getElementById('imp-file-label').textContent = 'Datei auswählen oder hier ablegen';
+    document.getElementById('imp-file-label').textContent = 'Datei ausw\u00e4hlen oder hier ablegen';
     impSetState('input');
   };
 
-  /* ── Datei-Auswahl ────────────────────────────────────────────────────── */
   window.impFileSelected = function(input) {
     const file = input.files[0];
     if (!file) return;
     document.getElementById('imp-file-label').textContent = file.name;
-
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = e => {
         const dataUrl = e.target.result;
-        const b64 = dataUrl.split(',')[1];
-        _fileData = { type: 'image', content: b64, mimeType: file.type };
+        _fileData = { type: 'image', content: dataUrl.split(',')[1], mimeType: file.type };
         const prev = document.getElementById('imp-img-preview');
-        prev.src = dataUrl;
-        prev.style.display = 'block';
+        prev.src = dataUrl; prev.style.display = 'block';
       };
       reader.readAsDataURL(file);
     } else {
       const reader = new FileReader();
-      reader.onload = e => {
-        _fileData = { type: 'text', content: e.target.result };
-      };
+      reader.onload = e => { _fileData = { type: 'text', content: e.target.result }; };
       reader.readAsText(file);
     }
   };
 
-  /* ── Modal öffnen / schließen ─────────────────────────────────────────── */
   window.impOpen = function() {
-    _importedRecipe = null;
-    _fileData = null;
-    _activeTab = 0;
+    _importedRecipe = null; _fileData = null; _activeTab = 0;
     document.querySelectorAll('.imp-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
     document.querySelectorAll('.imp-panel').forEach((p, i) => p.classList.toggle('active', i === 0));
     document.getElementById('imp-textarea').value = '';
     document.getElementById('imp-url').value = '';
     document.getElementById('imp-img-preview').style.display = 'none';
-    document.getElementById('imp-file-label').textContent = 'Datei auswählen oder hier ablegen';
+    document.getElementById('imp-file-label').textContent = 'Datei ausw\u00e4hlen oder hier ablegen';
     document.getElementById('imp-file-input').value = '';
     impSetState('input');
     document.getElementById('imp-modal').classList.add('open');
   };
-  window.impClose = function() {
-    document.getElementById('imp-modal').classList.remove('open');
-  };
 
-  /* ── Zustand steuern ──────────────────────────────────────────────────── */
+  window.impClose = function() { document.getElementById('imp-modal').classList.remove('open'); };
+
   function impSetState(state) {
     ['input','loading','result','error'].forEach(s =>
       document.getElementById('imp-' + s).classList.toggle('on', s === state));
-
     const footer = document.getElementById('imp-footer');
     if (state === 'input') {
-      footer.innerHTML = `
-        <button class="btn-imp-back" onclick="impClose()">Abbrechen</button>
-        <button class="btn-imp" onclick="impAnalyze()">🔍 Analysieren</button>`;
+      footer.innerHTML = '<button class="btn-imp-back" onclick="impClose()">Abbrechen</button>' +
+        '<button class="btn-imp" onclick="impAnalyze()">\ud83d\udd0d Analysieren</button>';
     } else if (state === 'result') {
-      footer.innerHTML = `
-        <button class="btn-imp-back" onclick="impSetState('input')">← Zurück</button>
-        <button class="btn-imp sec" onclick="impEdit()">✏️ Bearbeiten</button>
-        <button class="btn-imp" onclick="impSave()">💾 Importieren</button>`;
+      footer.innerHTML = '<button class="btn-imp-back" onclick="impSetState(\'input\')">\u2190 Zur\u00fcck</button>' +
+        '<button class="btn-imp sec" onclick="impEdit()">\u270f\ufe0f Bearbeiten</button>' +
+        '<button class="btn-imp" onclick="impSave()">\ud83d\udcbe Importieren</button>';
     } else if (state === 'error') {
-      footer.innerHTML = `
-        <button class="btn-imp-back" onclick="impSetState('input')">← Zurück</button>
-        <button class="btn-imp" onclick="impAnalyze()">↺ Erneut</button>`;
+      footer.innerHTML = '<button class="btn-imp-back" onclick="impSetState(\'input\')">\u2190 Zur\u00fcck</button>' +
+        '<button class="btn-imp" onclick="impAnalyze()">\u21ba Erneut</button>';
     } else {
       footer.innerHTML = '';
     }
   }
 
-  /* ── Analysieren ──────────────────────────────────────────────────────── */
   window.impAnalyze = async function() {
     const startTs = Math.floor(Date.now() / 1000);
     let service, payload, loadingMsg;
-
     if (_activeTab === 0) {
-      // Text
       const text = document.getElementById('imp-textarea').value.trim();
-      if (!text) { window.showToast('Bitte Text einfügen', 'err'); return; }
-      service    = 'parse_text';
-      payload    = { text };
-      loadingMsg = 'Text wird analysiert …';
-
+      if (!text) { window.showToast('Bitte Text einf\u00fcgen', 'err'); return; }
+      service = 'parse_text'; payload = { text }; loadingMsg = 'Text wird analysiert \u2026';
     } else if (_activeTab === 1) {
-      // Datei
-      if (!_fileData) { window.showToast('Bitte eine Datei auswählen', 'err'); return; }
+      if (!_fileData) { window.showToast('Bitte eine Datei ausw\u00e4hlen', 'err'); return; }
       if (_fileData.type === 'text') {
-        service    = 'parse_text';
-        payload    = { text: _fileData.content };
-        loadingMsg = 'Dateiinhalt wird analysiert …';
+        service = 'parse_text'; payload = { text: _fileData.content }; loadingMsg = 'Dateiinhalt wird analysiert \u2026';
       } else {
-        service    = 'parse_image';
-        payload    = { image_data: _fileData.content, mime_type: _fileData.mimeType };
-        loadingMsg = 'Bild wird analysiert …';
+        service = 'parse_image'; payload = { image_data: _fileData.content, mime_type: _fileData.mimeType }; loadingMsg = 'Bild wird analysiert \u2026';
       }
-
     } else {
-      // Link
       const url = document.getElementById('imp-url').value.trim();
       if (!url) { window.showToast('Bitte eine URL eingeben', 'err'); return; }
-      service    = 'parse_url';
-      payload    = { url };
-      loadingMsg = 'Webseite wird abgerufen …';
+      service = 'parse_url'; payload = { url }; loadingMsg = 'Webseite wird abgerufen \u2026';
     }
-
     document.getElementById('imp-loading-msg').textContent = loadingMsg;
     impSetState('loading');
-
     try {
-      const resp = await fetch(`${window.HA_URL}/api/services/rezepte_import/${service}`, {
-        method:  'POST',
-        headers: { 'Authorization': `Bearer ${window.HA_TOKEN}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
+      const resp = await fetch(window.HA_URL + '/api/services/rezepte_import/' + service, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + window.HA_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       if (!resp.ok) throw new Error('HA-Fehler HTTP ' + resp.status);
-
-      // Ergebnis pollen
       const result = await impPoll(startTs);
       if (result.status !== 'ok') throw new Error(result.error || 'Unbekannter Fehler');
-
       _importedRecipe = result.recipe;
       _importedRecipe.id = Date.now();
       impShowResult(_importedRecipe);
@@ -279,75 +221,67 @@
     }
   };
 
-  async function impPoll(startTs, maxWait = 45000) {
+  async function impPoll(startTs, maxWait) {
+    maxWait = maxWait || 45000;
     const deadline = Date.now() + maxWait;
     while (Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(function(r) { setTimeout(r, 1500); });
       try {
         const r = await fetch('/local/rezepte/import_result.json?_=' + Date.now());
         if (!r.ok) continue;
         const data = await r.json();
         if (data.ts >= startTs) return data;
-      } catch(e) { /* noch nicht fertig */ }
+      } catch(e) {}
     }
-    throw new Error('Timeout – kein Ergebnis nach 45 Sekunden.');
+    throw new Error('Timeout \u2013 kein Ergebnis nach 45 Sekunden.');
   }
 
   function impShowResult(r) {
-    const meta = [
-      (r.ingredients?.length || 0) + ' Zutaten',
-      (r.steps?.length || 0) + ' Schritte',
-      r.category,
-    ].filter(Boolean).join(' · ');
-
-    document.getElementById('imp-result-card').innerHTML = `
-      <div class="imp-result-emoji">${window.esc(r.emoji || '🍳')}</div>
-      <div class="imp-result-info">
-        <h3>${window.esc(r.title)}</h3>
-        ${r.subtitle ? `<div class="imp-result-sub">${window.esc(r.subtitle)}</div>` : ''}
-        <div class="imp-result-meta">${window.esc(meta)}</div>
-        ${r.description ? `<div class="imp-result-desc">${window.esc(r.description)}</div>` : ''}
-      </div>`;
+    const meta = [(r.ingredients ? r.ingredients.length : 0) + ' Zutaten',
+      (r.steps ? r.steps.length : 0) + ' Schritte', r.category].filter(Boolean).join(' \u00b7 ');
+    document.getElementById('imp-result-card').innerHTML =
+      '<div class="imp-result-emoji">' + window.esc(r.emoji || '\ud83c\udf73') + '</div>' +
+      '<div class="imp-result-info">' +
+        '<h3>' + window.esc(r.title) + '</h3>' +
+        (r.subtitle ? '<div class="imp-result-sub">' + window.esc(r.subtitle) + '</div>' : '') +
+        '<div class="imp-result-meta">' + window.esc(meta) + '</div>' +
+        (r.description ? '<div class="imp-result-desc">' + window.esc(r.description) + '</div>' : '') +
+      '</div>';
   }
 
-  /* ── Importieren ──────────────────────────────────────────────────────── */
   window.impSave = async function() {
     if (!_importedRecipe) return;
     window.RECIPES.push(_importedRecipe);
     const btn = document.querySelector('#imp-footer .btn-imp:last-child');
-    if (btn) { btn.disabled = true; btn.textContent = '💾 Speichern …'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Speichern \u2026'; }
     try {
       await window.saveToHA();
-      window.showToast('✓ Rezept importiert', 'ok');
-      impClose();
-      window.renderHome();
-      window.showView('home');
+      window.showToast('\u2713 Rezept importiert', 'ok');
+      impClose(); window.renderHome(); window.showView('home');
     } catch(e) {
-      window.RECIPES = window.RECIPES.filter(r => r.id !== _importedRecipe.id);
-      window.showToast('❌ ' + e.message, 'err');
-      if (btn) { btn.disabled = false; btn.textContent = '💾 Importieren'; }
+      window.RECIPES = window.RECIPES.filter(function(r) { return r.id !== _importedRecipe.id; });
+      window.showToast('Fehler: ' + e.message, 'err');
+      if (btn) { btn.disabled = false; btn.textContent = 'Importieren'; }
     }
   };
 
-  /* ── Im Formular bearbeiten ────────────────────────────────────────────── */
   window.impEdit = function() {
     if (!_importedRecipe) return;
     const r = _importedRecipe;
     impClose();
-    window.fEditId = null;
-    window.fStep   = 0;
-    window.fEmoji  = r.emoji || '🍳';
-    window.fIngs   = (r.ingredients || []).map(x => ({...x}));
-    window.fSteps  = (r.steps       || []).map(x => ({...x}));
-    window.fNotes  = [...(r.notes   || [''])];
+    window.fEditId = null; window.fStep = 0;
+    window.fEmoji = r.emoji || '\ud83c\udf73';
+    window.fIngs  = (r.ingredients || []).map(function(x) { return Object.assign({}, x); });
+    window.fSteps = (r.steps || []).map(function(x) { return Object.assign({}, x); });
+    window.fNotes = (r.notes || ['']).slice();
     document.getElementById('f-title').value    = r.title        || '';
     document.getElementById('f-subtitle').value = r.subtitle     || '';
     document.getElementById('f-cat').value      = r.category     || '';
     document.getElementById('f-servings').value = r.baseServings || 4;
     document.getElementById('f-slabel').value   = r.servingLabel || 'Portionen';
     document.getElementById('f-desc').value     = r.description  || '';
-    document.getElementById('emoji-box').textContent      = window.fEmoji;
-    document.getElementById('form-heading').textContent   = 'Rezept bearbeiten';
+    document.getElementById('emoji-box').textContent    = window.fEmoji;
+    document.getElementById('form-heading').textContent = 'Rezept bearbeiten';
     document.getElementById('emoji-picker-panel').style.display = 'none';
     document.getElementById('emoji-box').classList.remove('open');
     window.showFStep();

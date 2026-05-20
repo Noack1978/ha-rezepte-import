@@ -89,13 +89,17 @@ Antworte NUR mit dem JSON-Objekt."""
 
 # ── Setup ──────────────────────────────────────────────────────────────────────
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Wird immer beim Laden der Integration ausgefuehrt.
+    Kopiert import.js sofort – unabhaengig vom Config Flow."""
+    await hass.async_add_executor_job(_provision_js, hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Integration einrichten."""
     agent_id        = entry.data.get("conversation_agent", AGENT_ID_DEFAULT)
     llmvision_prov  = entry.data.get("llmvision_provider", LLMVISION_PROVIDER_DEFAULT)
-
-    # import.js nach /config/www/rezepte/ kopieren
-    await hass.async_add_executor_job(_provision_js, hass)
 
     # ── Service: parse_text ────────────────────────────────────────────────────
     async def handle_parse_text(call: ServiceCall) -> None:

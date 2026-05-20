@@ -1,0 +1,11 @@
+{
+  "domain": "rezepte_import",
+  "name": "Rezepte Import",
+  "version": "1.0.0",
+  "documentation": "https://github.com/DEIN_USERNAME/ha-rezepte-import",
+  "requirements": [],
+  "dependencies": ["frontend", "conversation"],
+  "codeowners": [],
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}

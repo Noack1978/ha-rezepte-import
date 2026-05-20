@@ -13,7 +13,6 @@ from __future__ import annotations
 import base64
 import json
 import logging
-import shutil
 import time
 from html.parser import HTMLParser
 from pathlib import Path
@@ -88,13 +87,6 @@ Antworte NUR mit dem JSON-Objekt."""
 
 
 # ── Setup ──────────────────────────────────────────────────────────────────────
-
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Wird immer beim Laden der Integration ausgefuehrt.
-    Kopiert import.js sofort – unabhaengig vom Config Flow."""
-    await hass.async_add_executor_job(_provision_js, hass)
-    return True
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Integration einrichten."""
@@ -317,14 +309,6 @@ def _delete_file(path: str) -> None:
     except Exception:
         pass
 
-
-def _provision_js(hass: HomeAssistant) -> None:
-    """import.js nach /config/www/rezepte/ kopieren."""
-    src = Path(__file__).parent / "www" / "import.js"
-    dst_dir = Path(hass.config.path("www", REZEPTE_DOMAIN))
-    dst_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst_dir / "import.js")
-    _LOGGER.info("import.js bereitgestellt in %s", dst_dir)
 
 
 # ── HTML-Text-Extraktion ──────────────────────────────────────────────────────

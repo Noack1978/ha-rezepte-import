@@ -91,7 +91,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         tmp_path = f"/tmp/rezept_import_{int(time.time())}.{ext}"
         await hass.async_add_executor_job(_write_image_file, tmp_path, image_b64)
         try:
-            response_text = await _analyze_image(hass, tmp_path)
+            response_text = await _analyze_image(hass, tmp_path, llmvision_prov)
             _write_parsed(hass, response_text)
         except Exception as err:
             _write_error(hass, f"Bilderkennung fehlgeschlagen: {err}")
@@ -144,19 +144,44 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 # ── KI-Aufruf ─────────────────────────────────────────────────────────────────
 
 
-async def _analyze_image(hass: HomeAssistant, image_path: str) -> str:
-    """Bild mit Google Generative AI analysieren.
+async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: str = "Google") -> str:
+    """Bild analysieren: LLM Vision zuerst, dann Google AI als Fallback."""
+    errors: list[str] = []
 
-    Versucht beide bekannten Parameternamen (je nach HA-Version).
-    """
-    last_err: Exception | None = None
+    # 1. LLM Vision (konfigurierter Anbieter, z.B. Groq)
+    try:
+        result = await hass.services.async_call(
+            "llmvision", "image_analyzer",
+            {
+                "provider":         llmvision_prov,
+                "message":          _PROMPT_IMAGE,
+                "image_file":       [image_path],
+                "max_tokens":       2000,
+                "target_width":     1920,
+                "include_filename": False,
+            },
+            blocking=True,
+            return_response=True,
+        )
+        text = result.get("response_text", "")
+        if isinstance(text, list):
+            text = "\n".join(
+                x.get("text", str(x)) if isinstance(x, dict) else str(x)
+                for x in text
+            )
+        if text:
+            _LOGGER.debug("Bild analysiert via LLM Vision (%s)", llmvision_prov)
+            return str(text)
+        errors.append(f"LLM Vision ({llmvision_prov}): leere Antwort")
+    except Exception as err:
+        errors.append(f"LLM Vision ({llmvision_prov}): {err}")
+        _LOGGER.debug("LLM Vision fehlgeschlagen: %s", err)
 
-    # Parametervarianten die verschiedene HA-Versionen verwenden
+    # 2. Google Generative AI (Fallback fuer aeltere HA-Versionen)
     for file_param in ("filenames", "image_filename"):
         try:
             result = await hass.services.async_call(
-                "google_generative_ai_conversation",
-                "generate_content",
+                "google_generative_ai_conversation", "generate_content",
                 {"prompt": _PROMPT_IMAGE, file_param: [image_path]},
                 blocking=True,
                 return_response=True,
@@ -165,17 +190,16 @@ async def _analyze_image(hass: HomeAssistant, image_path: str) -> str:
             if isinstance(text, list):
                 text = "\n".join(str(x) for x in text)
             if text:
-                _LOGGER.debug("Bild analysiert via generate_content (%s)", file_param)
+                _LOGGER.debug("Bild analysiert via Google AI (%s)", file_param)
                 return str(text)
         except Exception as err:
-            last_err = err
-            _LOGGER.debug("generate_content mit '%s' fehlgeschlagen: %s", file_param, err)
+            errors.append(f"Google AI ({file_param}): {err}")
+            _LOGGER.debug("Google AI fehlgeschlagen: %s", err)
 
     raise RuntimeError(
-        f"google_generative_ai_conversation.generate_content nicht verfuegbar "
-        f"oder Modell unterstuetzt keine Bilder. "
-        f"Tipp: Bild-Text per Google Lens extrahieren und im Text-Tab einfuegen. "
-        f"Letzter Fehler: {last_err}"
+        "Kein Bildanalyse-Dienst verfuegbar. "
+        "Tipp: Google Lens nutzen und Text im Text-Tab einfuegen. "
+        f"Fehler: {'; '.join(errors)}"
     )
 
 async def _call_conversation(hass: HomeAssistant, agent_id: str, prompt: str) -> None:

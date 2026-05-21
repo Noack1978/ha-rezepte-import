@@ -302,8 +302,15 @@ async def _write_parsed(hass: HomeAssistant, response_text: str) -> None:
 
 
 def _parse_json_response(text: str) -> dict:
-    """JSON aus KI-Antwort extrahieren und bei Bedarf reparieren."""
+    """JSON aus KI-Antwort extrahieren und bei Bedarf reparieren.
+
+    Versucht in dieser Reihenfolge:
+    1. Direktes json.loads()
+    2. json-repair Library (behebt unescapte Zeichen, fehlende Klammern, etc.)
+    3. Eigene Fallback-Reparatur
+    """
     text = text.strip()
+
     # Markdown-Fences entfernen
     if "```" in text:
         for part in text.split("```"):
@@ -312,19 +319,34 @@ def _parse_json_response(text: str) -> dict:
                 return json.loads(part)
             except Exception:
                 continue
+
     # Direkt parsen
     try:
         return json.loads(text)
     except Exception:
         pass
+
     # JSON-Objekt aus umgebendem Text herausschneiden
     start, end = text.find("{"), text.rfind("}")
+    chunk = text[start:end + 1] if start != -1 and end > start else text
+
+    # json-repair Library (haelt alle KI-typischen JSON-Fehler aus)
+    try:
+        from json_repair import repair_json  # type: ignore[import]
+        repaired = repair_json(chunk, return_objects=True)
+        if isinstance(repaired, dict) and repaired:
+            _LOGGER.debug("JSON via json-repair repariert")
+            return repaired
+    except Exception as repair_err:
+        _LOGGER.debug("json-repair fehlgeschlagen: %s", repair_err)
+
+    # Eigene Fallback-Reparatur
     if start != -1 and end > start:
-        chunk = text[start:end + 1]
         try:
-            return json.loads(chunk)
-        except Exception:
             return _repair_json(chunk)
+        except Exception:
+            pass
+
     raise ValueError("Kein gueltiges JSON gefunden")
 
 

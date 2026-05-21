@@ -98,7 +98,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_parse_text(call: ServiceCall) -> None:
         text = call.data.get("text", "").strip()
         if not text:
-            _write_error(hass, "Kein Text uebergeben.")
+            await _write_error(hass, "Kein Text uebergeben.")
             return
         await _call_conversation(hass, agent_id, prompt_base + text)
 
@@ -107,16 +107,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         image_b64 = call.data.get("image_data", "")
         mime_type  = call.data.get("mime_type", "image/jpeg")
         if not image_b64:
-            _write_error(hass, "Keine Bilddaten uebergeben.")
+            await _write_error(hass, "Keine Bilddaten uebergeben.")
             return
         ext      = "jpg" if "jpeg" in mime_type else mime_type.split("/")[-1]
         tmp_path = f"/tmp/rezept_import_{int(time.time())}.{ext}"
         await hass.async_add_executor_job(_write_image_file, tmp_path, image_b64)
         try:
             response_text = await _analyze_image(hass, tmp_path, llmvision_prov, image_prompt, vision_api_key, vision_model)
-            _write_parsed(hass, response_text)
+            await _write_parsed(hass, response_text)
         except Exception as err:
-            _write_error(hass, f"Bilderkennung fehlgeschlagen: {err}")
+            await _write_error(hass, f"Bilderkennung fehlgeschlagen: {err}")
         finally:
             await hass.async_add_executor_job(_delete_file, tmp_path)
 
@@ -124,7 +124,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_parse_url(call: ServiceCall) -> None:
         url = call.data.get("url", "").strip()
         if not url:
-            _write_error(hass, "Keine URL uebergeben.")
+            await _write_error(hass, "Keine URL uebergeben.")
             return
         try:
             session = async_get_clientsession(hass)
@@ -137,7 +137,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 resp.raise_for_status()
                 html = await resp.text(errors="replace")
         except Exception as err:
-            _write_error(hass, f"URL abrufen fehlgeschlagen: {err}")
+            await _write_error(hass, f"URL abrufen fehlgeschlagen: {err}")
             return
 
         # JSON-LD zuerst versuchen (strukturierte Rezeptdaten vieler Rezeptseiten)
@@ -219,7 +219,7 @@ async def _analyze_image(
                             }},
                         ],
                     }],
-                    "max_tokens": 2000,
+                    "max_tokens": 8192,
                 },
                 timeout=_aiohttp.ClientTimeout(total=60),
             ) as resp:
@@ -242,7 +242,7 @@ async def _analyze_image(
                 "provider":         llmvision_prov,
                 "message":          image_prompt,
                 "image_file":       [image_path],
-                "max_tokens":       2000,
+                "max_tokens":       8192,
                 "target_width":     1920,
                 "include_filename": False,
             },
@@ -284,21 +284,21 @@ async def _call_conversation(hass: HomeAssistant, agent_id: str, prompt: str) ->
             .get("plain", {})
             .get("speech", "")
         )
-        _write_parsed(hass, response_text)
+        await _write_parsed(hass, response_text)
     except Exception as err:
-        _write_error(hass, f"Konversations-API Fehler: {err}")
+        await _write_error(hass, f"Konversations-API Fehler: {err}")
 
 
-def _write_parsed(hass: HomeAssistant, response_text: str) -> None:
+async def _write_parsed(hass: HomeAssistant, response_text: str) -> None:
     if isinstance(response_text, list):
         response_text = "\n".join(str(x) for x in response_text)
     try:
         recipe = _parse_json_response(str(response_text))
         recipe = _validate_recipe(recipe)
-        _write_result(hass, {"ts": int(time.time()), "status": "ok", "recipe": recipe})
+        await _write_result(hass, {"ts": int(time.time()), "status": "ok", "recipe": recipe})
     except Exception as err:
         preview = str(response_text)[:200] if response_text else "(leer)"
-        _write_error(hass, f"JSON-Parsing fehlgeschlagen: {err}. Antwort: {preview}")
+        await _write_error(hass, f"JSON-Parsing fehlgeschlagen: {err}. Antwort: {preview}")
 
 
 def _parse_json_response(text: str) -> dict:
@@ -324,6 +324,8 @@ def _validate_recipe(r: dict) -> dict:
     r.setdefault("title",        "Importiertes Rezept")
     r.setdefault("subtitle",     "")
     r.setdefault("emoji",        "\U0001f373")
+    if not r.get("emoji"):
+        r["emoji"] = "\U0001f373"
     r.setdefault("category",     "")
     r.setdefault("description",  "")
     r.setdefault("servingLabel", "Portionen")
@@ -367,14 +369,18 @@ def _validate_recipe(r: dict) -> dict:
 def _result_path(hass: HomeAssistant) -> Path:
     return Path(hass.config.path("www", REZEPTE_DOMAIN, RESULT_FILE))
 
-def _write_result(hass: HomeAssistant, data: dict) -> None:
-    path = _result_path(hass)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+async def _write_result(hass: HomeAssistant, data: dict) -> None:
+    """Ergebnis-JSON asynchron in Executor-Thread schreiben."""
+    path    = _result_path(hass)
+    content = json.dumps(data, ensure_ascii=False, indent=2)
+    def _write() -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+    await hass.async_add_executor_job(_write)
 
-def _write_error(hass: HomeAssistant, msg: str) -> None:
+async def _write_error(hass: HomeAssistant, msg: str) -> None:
     _LOGGER.error("Rezepte Import: %s", msg)
-    _write_result(hass, {"ts": int(time.time()), "status": "error", "error": msg})
+    await _write_result(hass, {"ts": int(time.time()), "status": "error", "error": msg})
 
 def _write_image_file(path: str, b64: str) -> None:
     missing = len(b64) % 4

@@ -108,9 +108,33 @@ Rezepttext direkt einfügen – beliebiges Format:
 |----------|-------------|---------|
 | `.txt` | Text wird direkt analysiert | Empfohlen |
 | `.jpg` `.jpeg` `.png` `.webp` `.heic` `.bmp` | Bilderkennung via Groq Vision API | Groq API-Key erforderlich |
-| `.pdf` | ❌ Nicht unterstützt | Text via Google Lens extrahieren → Text-Tab |
+| `.pdf` | pypdf (Text) oder pymupdf + Groq Vision (gescannt) | Groq API-Key für gescannte PDFs empfohlen |
 
 ---
+
+### 📄 PDF
+
+PDF-Dateien werden in zwei Schritten verarbeitet:
+
+**Schritt 1 – Textextraktion (pypdf):**
+Digitale PDFs (Rezepthefte, als PDF gespeicherte Webseiten) enthalten
+maschinenlesbaren Text der direkt extrahiert und über den Konversationsagenten
+analysiert wird. Keine extra Konfiguration nötig.
+
+**Schritt 2 – Groq Vision Fallback (für gescannte PDFs):**
+Wenn kein Text gefunden wird (Foto-Scan, Kameraufnahme als PDF), wird die
+erste Seite automatisch als Bild gerendert und über die Groq Vision API
+analysiert – genau wie der direkte Bild-Import.
+
+**Voraussetzung für gescannte PDFs:** Groq API-Key in der Konfiguration eingetragen.
+
+| PDF-Typ | Verarbeitung | Voraussetzung |
+|---------|-------------|---------------|
+| Digitales PDF (Text) | pypdf → Konversationsagent | Keine |
+| Gescanntes PDF (Bild) | pymupdf → Groq Vision API | Groq API-Key |
+
+- Maximale Dateigröße: 10 MB
+- `pypdf` und `pymupdf` werden automatisch von HA installiert
 
 ### 🔗 Link
 
@@ -136,7 +160,15 @@ vollständig ohne LLM Vision. Unterstützte Formate: JPG, PNG, WEBP, HEIC, BMP.
 4. Vorschau prüfen → direkt importieren oder im Formular bearbeiten
 
 **Wenn kein Groq-Key eingetragen ist:**
-LLM Vision wird als Fallback verwendet. Bei bekannten Bugs in LLM Vision:
+LLM Vision wird als Fallback verwendet – Ergebnis abhängig vom gewählten Anbieter:
+
+| LLM Vision Anbieter | Bild-Import |
+|---------------------|-------------|
+| Google | ❌ Bekannter Bug in v1.6.x / v1.7.0-rc.1 |
+| Groq | ❌ Bekannter Bug in v1.6.x / v1.7.0-rc.1 |
+| Anthropic / OpenAI | ⚠️ Möglicherweise funktionsfähig (ungetestet) |
+
+Bei LLM Vision Bug als Workaround:
 1. **Google Lens** auf dem Smartphone
 2. Foto aufnehmen → Text erkennen lassen
 3. Text kopieren → **Text-Tab** nutzen

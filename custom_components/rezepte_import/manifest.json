@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "documentation": "https://github.com/DEIN_USERNAME/ha-rezepte-import",
   "requirements": [
-    "json-repair>=0.29.0"
+    "json-repair>=0.29.0",
+    "pymupdf>=1.24.0",
+    "pypdf>=4.0.0"
   ],
   "dependencies": [
     "frontend",

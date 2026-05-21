@@ -149,16 +149,64 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await _call_conversation(hass, agent_id, prompt_base + text)
 
+    # ── parse_pdf ──────────────────────────────────────────────────────────────
+    async def handle_parse_pdf(call: ServiceCall) -> None:
+        pdf_b64 = call.data.get("pdf_data", "")
+        if not pdf_b64:
+            await _write_error(hass, "Keine PDF-Daten uebergeben.")
+            return
+        # Text extrahieren (Executor-Thread, da synchrone pypdf-Operation)
+        try:
+            text = await hass.async_add_executor_job(_extract_pdf_text, pdf_b64)
+        except Exception as err:
+            await _write_error(hass, f"PDF-Verarbeitung fehlgeschlagen: {err}")
+            return
+        if not text.strip():
+            # Kein Text → gescanntes PDF → Fallback: erste Seite via Groq Vision
+            if not vision_api_key:
+                await _write_error(
+                    hass,
+                    "Kein Text im PDF gefunden (gescanntes PDF). "
+                    "Tipp: Groq API-Key in der Konfiguration eintragen "
+                    "um gescannte PDFs automatisch zu verarbeiten. "
+                    "Alternativ: Google Lens → Text-Tab.",
+                )
+                return
+            _LOGGER.debug("PDF ohne Text – versuche Groq Vision Fallback")
+            try:
+                img_b64, _mime = await hass.async_add_executor_job(
+                    _pdf_page_to_image, pdf_b64
+                )
+            except Exception as err:
+                await _write_error(hass, f"PDF→Bild Konvertierung fehlgeschlagen: {err}")
+                return
+            tmp_path = f"/tmp/rezept_pdf_page_{int(time.time())}.jpg"
+            await hass.async_add_executor_job(_write_image_file, tmp_path, img_b64)
+            try:
+                response_text = await _analyze_image(
+                    hass, tmp_path, llmvision_prov,
+                    image_prompt, vision_api_key, vision_model,
+                )
+                await _write_parsed(hass, response_text)
+            except Exception as err:
+                await _write_error(hass, f"Gescanntes PDF – Bildanalyse fehlgeschlagen: {err}")
+            finally:
+                await hass.async_add_executor_job(_delete_file, tmp_path)
+            return
+        _LOGGER.debug("PDF: %d Zeichen Text extrahiert", len(text))
+        await _call_conversation(hass, agent_id, prompt_base + text[:MAX_TEXT_LENGTH])
+
     hass.services.async_register(DOMAIN, "parse_text",  handle_parse_text)
     hass.services.async_register(DOMAIN, "parse_image", handle_parse_image)
     hass.services.async_register(DOMAIN, "parse_url",   handle_parse_url)
+    hass.services.async_register(DOMAIN, "parse_pdf",   handle_parse_pdf)
 
     _LOGGER.info("Rezepte Import geladen (Agent: %s, Vision: %s)", agent_id, llmvision_prov)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    for svc in ("parse_text", "parse_image", "parse_url"):
+    for svc in ("parse_text", "parse_image", "parse_url", "parse_pdf"):
         hass.services.async_remove(DOMAIN, svc)
     return True
 
@@ -489,6 +537,60 @@ def _delete_file(path: str) -> None:
 
 
 # ── HTML / JSON-LD Extraktion ─────────────────────────────────────────────────
+
+
+def _extract_pdf_text(pdf_b64: str) -> str:
+    """Text aus PDF-Datei extrahieren (pypdf).
+
+    Gibt leeren String zurueck wenn kein Text gefunden (gescanntes PDF).
+    """
+    import io as _io
+    try:
+        import pypdf
+    except ImportError:
+        raise RuntimeError(
+            "pypdf nicht installiert – bitte Home Assistant neu starten "
+            "damit die Abhaengigkeit installiert wird."
+        )
+    missing = len(pdf_b64) % 4
+    if missing:
+        pdf_b64 += "=" * (4 - missing)
+    pdf_bytes = base64.b64decode(pdf_b64)
+    reader = pypdf.PdfReader(_io.BytesIO(pdf_bytes))
+    pages: list[str] = []
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        if text.strip():
+            pages.append(text)
+    return "\n".join(pages).strip()
+
+
+def _pdf_page_to_image(pdf_b64: str) -> tuple[str, str]:
+    """Erste Seite eines gescannten PDFs als JPEG rendern (pymupdf).
+
+    Gibt (base64_string, "image/jpeg") zurueck.
+    """
+    import io as _io
+    try:
+        import fitz  # pymupdf
+    except ImportError:
+        raise RuntimeError(
+            "pymupdf nicht installiert – bitte Home Assistant neu starten."
+        )
+    missing = len(pdf_b64) % 4
+    if missing:
+        pdf_b64 += "=" * (4 - missing)
+    pdf_bytes = base64.b64decode(pdf_b64)
+    doc = fitz.open(stream=_io.BytesIO(pdf_bytes), filetype="pdf")
+    try:
+        page = doc[0]
+        # 2-fache Aufloesung fuer bessere Erkennungsqualitaet
+        mat  = fitz.Matrix(2.0, 2.0)
+        pix  = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("jpeg")
+    finally:
+        doc.close()
+    return base64.b64encode(img_bytes).decode(), "image/jpeg"
 
 def _extract_jsonld_recipe(html: str) -> str | None:
     """JSON-LD Recipe-Daten aus HTML extrahieren (Standard bei vielen Rezeptseiten)."""

@@ -37,3 +37,15 @@ parse_url:
       required: true
       selector:
         text:
+
+parse_pdf:
+  name: PDF-Rezept importieren
+  description: Extrahiert Text aus einer PDF-Datei und analysiert ihn als Rezept.
+  fields:
+    pdf_data:
+      name: PDF-Daten (base64)
+      description: Base64-kodierter Inhalt der PDF-Datei.
+      required: true
+      example: "JVBERi0xLjQK..."
+      selector:
+        text:

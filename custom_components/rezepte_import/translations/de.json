@@ -6,7 +6,9 @@
         "description": "Wähle den Konversationsagenten für Text-Analyse und den LLM-Vision-Anbieter für Bild-Analyse.",
         "data": {
           "conversation_agent": "Konversationsagent (entity_id)",
-          "llmvision_provider": "LLM Vision Anbieter (für Bild-Import)",
+          "llmvision_provider": "LLM Vision Anbieter (Fallback für Bild-Import)",
+          "vision_api_key": "Groq API-Key für Bild-Import (empfohlen)",
+          "vision_model": "Groq Vision Modell",
           "prompt_mode": "Text/Link Prompt-Modus",
           "custom_prompt": "Eigener Text/Link-Prompt",
           "image_prompt_mode": "Bild Prompt-Modus",
@@ -18,7 +20,9 @@
         "description": "Konversationsagent oder LLM Vision Anbieter aendern.",
         "data": {
           "conversation_agent": "Konversationsagent (entity_id)",
-          "llmvision_provider": "LLM Vision Anbieter (für Bild-Import)",
+          "llmvision_provider": "LLM Vision Anbieter (Fallback für Bild-Import)",
+          "vision_api_key": "Groq API-Key für Bild-Import (empfohlen)",
+          "vision_model": "Groq Vision Modell",
           "prompt_mode": "Text/Link Prompt-Modus",
           "custom_prompt": "Eigener Text/Link-Prompt",
           "image_prompt_mode": "Bild Prompt-Modus",

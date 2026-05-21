@@ -302,7 +302,9 @@ async def _write_parsed(hass: HomeAssistant, response_text: str) -> None:
 
 
 def _parse_json_response(text: str) -> dict:
+    """JSON aus KI-Antwort extrahieren und bei Bedarf reparieren."""
     text = text.strip()
+    # Markdown-Fences entfernen
     if "```" in text:
         for part in text.split("```"):
             part = part.strip().lstrip("json").strip()
@@ -310,14 +312,83 @@ def _parse_json_response(text: str) -> dict:
                 return json.loads(part)
             except Exception:
                 continue
+    # Direkt parsen
     try:
         return json.loads(text)
     except Exception:
         pass
+    # JSON-Objekt aus umgebendem Text herausschneiden
     start, end = text.find("{"), text.rfind("}")
     if start != -1 and end > start:
-        return json.loads(text[start:end + 1])
+        chunk = text[start:end + 1]
+        try:
+            return json.loads(chunk)
+        except Exception:
+            return _repair_json(chunk)
     raise ValueError("Kein gueltiges JSON gefunden")
+
+
+def _repair_json(text: str) -> dict:
+    """Haeufige KI-JSON-Fehler reparieren (Steuerzeichen, Trailing Commas, Truncation)."""
+    import re as _re
+
+    # 1. Trailing commas
+    repaired = _re.sub(r",(\s*[}\]])", r"\1", text)
+    try:
+        return json.loads(repaired)
+    except Exception:
+        pass
+
+    # 2. Unescapte Steuerzeichen in JSON-Strings escapen
+    def _escape_ctrl(s: str) -> str:
+        out: list[str] = []
+        in_str = False
+        i = 0
+        while i < len(s):
+            ch = s[i]
+            if ch == "\\" and i + 1 < len(s):
+                out.append(ch)
+                out.append(s[i + 1])
+                i += 2
+                continue
+            if ch == '"':
+                in_str = not in_str
+                out.append(ch)
+            elif in_str and ord(ch) == 10:
+                out.append("\\n")
+            elif in_str and ord(ch) == 13:
+                out.append("\\r")
+            elif in_str and ord(ch) == 9:
+                out.append("\\t")
+            else:
+                out.append(ch)
+            i += 1
+        return "".join(out)
+
+    repaired2 = _escape_ctrl(repaired)
+    try:
+        return json.loads(repaired2)
+    except Exception:
+        pass
+
+    # 3. Abgeschnittenes JSON: letzten unvollstaendigen Eintrag entfernen
+    candidate = repaired2
+    for _ in range(15):
+        last_comma = candidate.rfind(",")
+        if last_comma < 0:
+            break
+        candidate = candidate[:last_comma]
+        opens     = candidate.count("{") - candidate.count("}")
+        arr_opens = candidate.count("[") - candidate.count("]")
+        if opens >= 0 and arr_opens >= 0:
+            closed = candidate + "]" * arr_opens + "}" * opens
+            closed = _re.sub(r",(\s*[}\]])", r"\1", closed)
+            try:
+                return json.loads(closed)
+            except Exception:
+                continue
+
+    raise ValueError("JSON-Reparatur fehlgeschlagen")
 
 
 def _validate_recipe(r: dict) -> dict:

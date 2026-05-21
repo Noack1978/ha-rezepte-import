@@ -172,7 +172,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     "Alternativ: Google Lens → Text-Tab.",
                 )
                 return
-            _LOGGER.debug("PDF ohne Text – versuche Groq Vision Fallback")
+            _LOGGER.debug("PDF ohne Text – versuche Groq Vision Fallback (pypdf Bildextraktion)")
             try:
                 img_b64, _mime = await hass.async_add_executor_job(
                     _pdf_page_to_image, pdf_b64
@@ -566,31 +566,36 @@ def _extract_pdf_text(pdf_b64: str) -> str:
 
 
 def _pdf_page_to_image(pdf_b64: str) -> tuple[str, str]:
-    """Erste Seite eines gescannten PDFs als JPEG rendern (pymupdf).
+    """Eingebettetes Bild aus erster PDF-Seite extrahieren (pypdf).
 
-    Gibt (base64_string, "image/jpeg") zurueck.
+    Funktioniert fuer gescannte PDFs die ein eingebettetes Bild enthalten.
+    Gibt (base64_string, mime_type) zurueck.
     """
     import io as _io
-    try:
-        import fitz  # pymupdf
-    except ImportError:
-        raise RuntimeError(
-            "pymupdf nicht installiert – bitte Home Assistant neu starten."
-        )
+    import pypdf
+
     missing = len(pdf_b64) % 4
     if missing:
         pdf_b64 += "=" * (4 - missing)
     pdf_bytes = base64.b64decode(pdf_b64)
-    doc = fitz.open(stream=_io.BytesIO(pdf_bytes), filetype="pdf")
-    try:
-        page = doc[0]
-        # 2-fache Aufloesung fuer bessere Erkennungsqualitaet
-        mat  = fitz.Matrix(2.0, 2.0)
-        pix  = page.get_pixmap(matrix=mat)
-        img_bytes = pix.tobytes("jpeg")
-    finally:
-        doc.close()
-    return base64.b64encode(img_bytes).decode(), "image/jpeg"
+    reader = pypdf.PdfReader(_io.BytesIO(pdf_bytes))
+
+    page = reader.pages[0]
+    images = list(page.images)
+    if not images:
+        raise RuntimeError(
+            "Keine eingebetteten Bilder in der PDF gefunden. "
+            "Das PDF ist moeglicherweise kein einfacher Scan."
+        )
+    img = images[0]
+    name = (img.name or "").lower()
+    if "png" in name:
+        mime = "image/png"
+    elif "jp" in name:
+        mime = "image/jpeg"
+    else:
+        mime = "image/jpeg"
+    return base64.b64encode(img.data).decode(), mime
 
 def _extract_jsonld_recipe(html: str) -> str | None:
     """JSON-LD Recipe-Daten aus HTML extrahieren (Standard bei vielen Rezeptseiten)."""

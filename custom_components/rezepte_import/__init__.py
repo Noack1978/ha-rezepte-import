@@ -67,10 +67,30 @@ Regeln: amount=Zahl, unit eines von: g kg ml l TL EL Stk. Prise n.B., timerSec=S
 ANTWORTE NUR MIT JSON."""
 
 
+
+def _get_prompt(entry_data: dict) -> str:
+    """Aktiven Prompt aus Konfiguration lesen."""
+    if entry_data.get("prompt_mode") == "custom":
+        custom = entry_data.get("custom_prompt", "").strip()
+        if custom:
+            return custom + "\n\nRezepttext:\n"
+    return _PROMPT_BASE
+
+
+def _get_image_prompt(entry_data: dict) -> str:
+    """Aktiven Bild-Prompt aus Konfiguration lesen."""
+    if entry_data.get("image_prompt_mode") == "custom":
+        custom = entry_data.get("custom_image_prompt", "").strip()
+        if custom:
+            return custom
+    return _PROMPT_IMAGE
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Services einrichten."""
     agent_id       = entry.data.get("conversation_agent", AGENT_ID_DEFAULT)
     llmvision_prov = entry.data.get("llmvision_provider", LLMVISION_PROVIDER_DEFAULT)
+    prompt_base    = _get_prompt(entry.data)
+    image_prompt   = _get_image_prompt(entry.data)
 
     # ── parse_text ────────────────────────────────────────────────────────────
     async def handle_parse_text(call: ServiceCall) -> None:
@@ -78,7 +98,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not text:
             _write_error(hass, "Kein Text uebergeben.")
             return
-        await _call_conversation(hass, agent_id, _PROMPT_BASE + text)
+        await _call_conversation(hass, agent_id, prompt_base + text)
 
     # ── parse_image ───────────────────────────────────────────────────────────
     async def handle_parse_image(call: ServiceCall) -> None:
@@ -91,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         tmp_path = f"/tmp/rezept_import_{int(time.time())}.{ext}"
         await hass.async_add_executor_job(_write_image_file, tmp_path, image_b64)
         try:
-            response_text = await _analyze_image(hass, tmp_path, llmvision_prov)
+            response_text = await _analyze_image(hass, tmp_path, llmvision_prov, image_prompt)
             _write_parsed(hass, response_text)
         except Exception as err:
             _write_error(hass, f"Bilderkennung fehlgeschlagen: {err}")
@@ -125,7 +145,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         else:
             text = _extract_text_from_html(html)[:MAX_TEXT_LENGTH]
 
-        await _call_conversation(hass, agent_id, _PROMPT_BASE + text)
+        await _call_conversation(hass, agent_id, prompt_base + text)
 
     hass.services.async_register(DOMAIN, "parse_text",  handle_parse_text)
     hass.services.async_register(DOMAIN, "parse_image", handle_parse_image)
@@ -144,7 +164,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 # ── KI-Aufruf ─────────────────────────────────────────────────────────────────
 
 
-async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: str = "Google") -> str:
+async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: str = "Google", image_prompt: str = _PROMPT_IMAGE) -> str:
     """Bild analysieren: LLM Vision zuerst, dann Google AI als Fallback."""
     errors: list[str] = []
 
@@ -154,7 +174,7 @@ async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: s
             "llmvision", "image_analyzer",
             {
                 "provider":         llmvision_prov,
-                "message":          _PROMPT_IMAGE,
+                "message":          image_prompt,
                 "image_file":       [image_path],
                 "max_tokens":       2000,
                 "target_width":     1920,
@@ -182,7 +202,7 @@ async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: s
         try:
             result = await hass.services.async_call(
                 "google_generative_ai_conversation", "generate_content",
-                {"prompt": _PROMPT_IMAGE, file_param: [image_path]},
+                {"prompt": image_prompt, file_param: [image_path]},
                 blocking=True,
                 return_response=True,
             )

@@ -107,7 +107,7 @@ Rezepttext direkt einfügen – beliebiges Format:
 | Dateityp | Verarbeitung | Hinweis |
 |----------|-------------|---------|
 | `.txt` | Text wird direkt analysiert | Empfohlen |
-| `.jpg` `.jpeg` `.png` `.webp` `.heic` `.bmp` | Bilderkennung via Groq Vision | Groq API-Key erforderlich |
+| `.jpg` `.jpeg` `.png` `.webp` `.heic` `.bmp` | Bilderkennung via Groq Vision API | Groq API-Key erforderlich |
 | `.pdf` | ❌ Nicht unterstützt | Text via Google Lens extrahieren → Text-Tab |
 
 ---
@@ -127,13 +127,19 @@ URL einer Rezept-Webseite einfügen. HA ruft die Seite **serverseitig** ab (kein
 **Voraussetzung:** Groq API-Key in der Konfiguration eingetragen.
 
 Der Bild-Import sendet das Bild direkt als base64 an die Groq Vision API –
-ohne Umweg über LLM Vision (dessen aktuell bekannter Bug wird so umgangen).
+vollständig ohne LLM Vision. Unterstützte Formate: JPG, PNG, WEBP, HEIC, BMP.
+
+**Ablauf:**
+1. Datei-Tab öffnen
+2. Bild auswählen (Foto, Screenshot, Scan)
+3. „Analysieren" tippen → Groq Vision erkennt Zutaten, Schritte und alle Felder
+4. Vorschau prüfen → direkt importieren oder im Formular bearbeiten
 
 **Wenn kein Groq-Key eingetragen ist:**
-LLM Vision wird als Fallback verwendet – bei bekanntem Bug im Text-Tab weiterarbeiten:
+LLM Vision wird als Fallback verwendet. Bei bekannten Bugs in LLM Vision:
 1. **Google Lens** auf dem Smartphone
 2. Foto aufnehmen → Text erkennen lassen
-3. Text kopieren → **Text-Tab** in der Import-Funktion einfügen
+3. Text kopieren → **Text-Tab** nutzen
 
 ---
 
@@ -226,7 +232,7 @@ Nach dem Import: Vorschau anzeigen → direkt speichern oder zuerst im Formular 
 | „429 Too Many Requests" | API-Kontingent erschöpft | Auf `gemini-1.5-flash` wechseln oder warten |
 | „High demand / Please try again later" | Gemini Rate Limit (Tageskontingent) | Auf `gemini-1.5-flash` wechseln |
 | „Kein gültiges JSON gefunden" | KI antwortete kein reines JSON | Erneut versuchen |
-| „list object has no attribute split" | LLM Vision Bug 1.6.x / 1.7.0-rc | Groq API-Key in Konfiguration eintragen |
+| „list object has no attribute split" | LLM Vision Bug 1.6.x / 1.7.0-rc | Groq API-Key eintragen → Bild-Import läuft direkt über Groq Vision |
 | „Action not found" | HA-Aktion in dieser Version entfernt | Groq API-Key für Bilder verwenden |
 | Bild-Import: leeres Rezept | Bild unleserlich oder kein Rezept erkennbar | Google Lens → Text-Tab |
 | Link: leeres Rezept | JavaScript-gerenderte Seite ohne JSON-LD | Seitentext manuell kopieren → Text-Tab |

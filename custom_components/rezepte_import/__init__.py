@@ -91,6 +91,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     llmvision_prov = entry.data.get("llmvision_provider", LLMVISION_PROVIDER_DEFAULT)
     prompt_base    = _get_prompt(entry.data)
     image_prompt   = _get_image_prompt(entry.data)
+    vision_api_key = entry.data.get("vision_api_key", "").strip()
+    vision_model   = entry.data.get("vision_model", "meta-llama/llama-4-scout-17b-16e-instruct").strip()
 
     # ── parse_text ────────────────────────────────────────────────────────────
     async def handle_parse_text(call: ServiceCall) -> None:
@@ -111,7 +113,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         tmp_path = f"/tmp/rezept_import_{int(time.time())}.{ext}"
         await hass.async_add_executor_job(_write_image_file, tmp_path, image_b64)
         try:
-            response_text = await _analyze_image(hass, tmp_path, llmvision_prov, image_prompt)
+            response_text = await _analyze_image(hass, tmp_path, llmvision_prov, image_prompt, vision_api_key, vision_model)
             _write_parsed(hass, response_text)
         except Exception as err:
             _write_error(hass, f"Bilderkennung fehlgeschlagen: {err}")
@@ -164,11 +166,75 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 # ── KI-Aufruf ─────────────────────────────────────────────────────────────────
 
 
-async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: str = "Google", image_prompt: str = _PROMPT_IMAGE) -> str:
-    """Bild analysieren: LLM Vision zuerst, dann Google AI als Fallback."""
+async def _analyze_image(
+    hass: HomeAssistant,
+    image_path: str,
+    llmvision_prov: str = "Google",
+    image_prompt: str = _PROMPT_IMAGE,
+    vision_api_key: str = "",
+    vision_model: str = "meta-llama/llama-4-scout-17b-16e-instruct",
+) -> str:
+    """Bild analysieren.
+
+    Reihenfolge:
+    1. Direkter OpenAI-kompatibler Vision-API-Aufruf (wenn API-Key vorhanden)
+    2. LLM Vision (Fallback)
+    """
+    import base64
+    import aiohttp as _aiohttp
+
     errors: list[str] = []
 
-    # 1. LLM Vision (konfigurierter Anbieter, z.B. Groq)
+    # ── 1. Direkte Vision API (Groq oder OpenAI-kompatibel) ──────────────────
+    if vision_api_key:
+        try:
+            # Bild als base64 lesen (im Executor-Thread)
+            def _read_b64() -> tuple[str, str]:
+                ext = image_path.lower().rsplit(".", 1)[-1]
+                mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg",
+                        "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+                with open(image_path, "rb") as fh:
+                    return base64.b64encode(fh.read()).decode(), mime
+
+            b64, mime = await hass.async_add_executor_job(_read_b64)
+
+            # Endpoint: Groq Standard, kann per vision_model-Praefix ueberschrieben werden
+            endpoint = "https://api.groq.com/openai/v1/chat/completions"
+
+            session = async_get_clientsession(hass)
+            async with session.post(
+                endpoint,
+                headers={
+                    "Authorization": f"Bearer {vision_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": vision_model,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": image_prompt},
+                            {"type": "image_url", "image_url": {
+                                "url": f"data:{mime};base64,{b64}"
+                            }},
+                        ],
+                    }],
+                    "max_tokens": 2000,
+                },
+                timeout=_aiohttp.ClientTimeout(total=60),
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                text = data["choices"][0]["message"]["content"]
+                if text:
+                    _LOGGER.debug("Bild analysiert via direkter Vision API (%s)", vision_model)
+                    return str(text)
+                errors.append("Vision API: leere Antwort")
+        except Exception as err:
+            errors.append(f"Vision API ({vision_model}): {err}")
+            _LOGGER.warning("Direkte Vision API fehlgeschlagen: %s", err)
+
+    # ── 2. LLM Vision Fallback ────────────────────────────────────────────────
     try:
         result = await hass.services.async_call(
             "llmvision", "image_analyzer",
@@ -197,28 +263,9 @@ async def _analyze_image(hass: HomeAssistant, image_path: str, llmvision_prov: s
         errors.append(f"LLM Vision ({llmvision_prov}): {err}")
         _LOGGER.debug("LLM Vision fehlgeschlagen: %s", err)
 
-    # 2. Google Generative AI (Fallback fuer aeltere HA-Versionen)
-    for file_param in ("filenames", "image_filename"):
-        try:
-            result = await hass.services.async_call(
-                "google_generative_ai_conversation", "generate_content",
-                {"prompt": image_prompt, file_param: [image_path]},
-                blocking=True,
-                return_response=True,
-            )
-            text = result.get("text", "") or result.get("response", "")
-            if isinstance(text, list):
-                text = "\n".join(str(x) for x in text)
-            if text:
-                _LOGGER.debug("Bild analysiert via Google AI (%s)", file_param)
-                return str(text)
-        except Exception as err:
-            errors.append(f"Google AI ({file_param}): {err}")
-            _LOGGER.debug("Google AI fehlgeschlagen: %s", err)
-
     raise RuntimeError(
         "Kein Bildanalyse-Dienst verfuegbar. "
-        "Tipp: Google Lens nutzen und Text im Text-Tab einfuegen. "
+        "Tipp: Groq API-Key in der Integration konfigurieren. "
         f"Fehler: {'; '.join(errors)}"
     )
 

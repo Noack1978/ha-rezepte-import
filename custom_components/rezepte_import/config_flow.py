@@ -48,6 +48,18 @@ def _schema(defaults: dict) -> vol.Schema:
             selector.TextSelectorConfig(multiline=True)
         ),
 
+        vol.Optional(
+            "vision_api_key",
+            default=defaults.get("vision_api_key", ""),
+        ): selector.TextSelector(
+            selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+        ),
+
+        vol.Optional(
+            "vision_model",
+            default=defaults.get("vision_model", "meta-llama/llama-4-scout-17b-16e-instruct"),
+        ): selector.TextSelector(),
+
         vol.Required(
             "image_prompt_mode",
             default=defaults.get("image_prompt_mode", "standard"),

@@ -1,6 +1,6 @@
 # 📋 Rezepte Import – Erweiterung für ha-rezepte
 
-Optionale Import-Erweiterung für die [ha-rezepte](https://github.com/DEIN_USERNAME/ha-rezepte) Integration.
+Optionale Import-Erweiterung für die [ha-rezepte](https://github.com/Noack1978/ha-rezepte) Integration.
 Ermöglicht das Importieren von Rezepten aus Text, Textdateien, Weblinks und Bildern direkt in die Rezepte-App.
 
 ---

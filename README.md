@@ -9,7 +9,7 @@ Ermöglicht das Importieren von Rezepten aus Text, Textdateien, Weblinks und Bil
 
 ### Zwingend erforderlich
 
-**[ha-rezepte](https://github.com/DEIN_USERNAME/ha-rezepte)** muss installiert und eingerichtet sein.
+**[ha-rezepte](https://github.com/Noack1978/ha-rezepte)** muss installiert und eingerichtet sein.
 
 **Ein Konversationsagent** muss in HA konfiguriert sein – er wird für Text-, Link- und Datei-Import verwendet.
 Empfohlen: Google Generative AI oder Groq (siehe Abschnitt KI-Konfiguration).

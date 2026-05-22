@@ -108,7 +108,7 @@ Rezepttext direkt einfügen – beliebiges Format:
 |----------|-------------|---------|
 | `.txt` | Text wird direkt analysiert | Empfohlen |
 | `.jpg` `.jpeg` `.png` `.webp` `.heic` `.bmp` | Bilderkennung via Groq Vision API | Groq API-Key erforderlich |
-| `.pdf` | pypdf (Text) oder pymupdf + Groq Vision (gescannt) | Groq API-Key für gescannte PDFs empfohlen |
+| `.pdf` | pypdf Textextraktion oder Bildextraktion → Groq Vision | Groq API-Key für gescannte PDFs |
 
 ---
 
@@ -131,10 +131,10 @@ analysiert – genau wie der direkte Bild-Import.
 | PDF-Typ | Verarbeitung | Voraussetzung |
 |---------|-------------|---------------|
 | Digitales PDF (Text) | pypdf → Konversationsagent | Keine |
-| Gescanntes PDF (Bild) | pymupdf → Groq Vision API | Groq API-Key |
+| Gescanntes PDF (Bild) | pypdf Bildextraktion → Groq Vision API | Groq API-Key |
 
 - Maximale Dateigröße: 10 MB
-- `pypdf` und `pymupdf` werden automatisch von HA installiert
+- `pypdf` wird automatisch von HA installiert
 
 ### 🔗 Link
 

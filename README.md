@@ -18,11 +18,9 @@ Empfohlen: Google Generative AI oder Groq (siehe Abschnitt KI-Konfiguration).
 
 ### Für Text / Link / TXT-Datei Import
 
-Ein **Konversationsagent** in HA genügt. Dieser wird unter
-**Einstellungen → Sprachassistenten → Konversationsagent** konfiguriert.
+Ein **Konversationsagent** in HA genügt. Dieser wird unter **Einstellungen → Sprachassistenten → Konversationsagent** konfiguriert.
 
-**Wichtig bei Google Gemini:**
-Das Modell `gemini-2.5-flash` hat nur **20 kostenlose Anfragen pro Tag**.
+**Wichtig bei Google Gemini:** Das Modell `gemini-2.5-flash` hat nur **20 kostenlose Anfragen pro Tag**.
 Für regelmäßigen Einsatz auf `gemini-1.5-flash` wechseln (1.500/Tag):
 Einstellungen → Integrationen → Google Gemini → Konfigurieren → Modell ändern
 
@@ -34,14 +32,14 @@ Für den Bild-Import wird ein **Groq API-Key** benötigt – der direkt in der
 Rezepte Import Konfiguration eingetragen wird (kein separater HA-Agent nötig).
 
 **Groq API-Key erstellen:**
+
 1. [console.groq.com](https://console.groq.com) → kostenloser Account
 2. API Keys → Create API Key
 3. Key kopieren → in Rezepte Import Konfiguration eintragen
 
 **Empfohlenes Vision-Modell:** `meta-llama/llama-4-scout-17b-16e-instruct`
 
-Fallback (wenn kein Key eingetragen): LLM Vision Integration.
-**Hinweis:** LLM Vision 1.6.0 und 1.7.0-rc.1 haben einen bekannten Bug
+Fallback (wenn kein Key eingetragen): LLM Vision Integration. **Hinweis:** LLM Vision 1.6.0 und 1.7.0-rc.1 haben einen bekannten Bug
 (`'list' object has no attribute 'split'`) der den Bild-Import verhindert.
 Der direkte Groq API-Aufruf umgeht diesen Bug vollständig.
 
@@ -50,6 +48,8 @@ Der direkte Groq API-Aufruf umgeht diesen Bug vollständig.
 ## Installation
 
 ### Via HACS
+
+[![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Noack1978&repository=ha-rezepte-import&category=integration)
 
 1. HACS → Integrationen → ⋮ → Benutzerdefinierte Repositories
 2. URL dieses Repositories, Kategorie: **Integration**
@@ -68,16 +68,16 @@ dann HA neu starten.
 1. **Einstellungen → Integrationen → + Hinzufügen → „Rezepte Import"**
 2. Folgende Felder ausfüllen:
 
-| Feld | Beschreibung | Beispiel |
-|------|-------------|---------|
-| Konversationsagent | entity_id des Agenten für Text/Link-Import | `conversation.google_generative_ai` |
-| LLM Vision Anbieter | Fallback für Bild-Import (wenn kein Groq-Key) | `Groq` |
-| Groq API-Key | API-Key für direkten Vision-Aufruf (empfohlen) | `gsk_...` |
-| Groq Vision Modell | Modell für Bilderkennung | `meta-llama/llama-4-scout-17b-16e-instruct` |
-| Text/Link Prompt-Modus | Standard oder eigener Prompt | `Standard` |
-| Eigener Text/Link-Prompt | Individuelle Anweisung an die KI | _(vorausgefüllt)_ |
-| Bild Prompt-Modus | Standard oder eigener Bild-Prompt | `Standard` |
-| Eigener Bild-Prompt | Individuelle Anweisung für Bilderkennung | _(vorausgefüllt)_ |
+| Feld                     | Beschreibung                                   | Beispiel                                    |
+| ------------------------ | ---------------------------------------------- | ------------------------------------------- |
+| Konversationsagent       | entity\_id des Agenten für Text/Link-Import    | `conversation.google_generative_ai`         |
+| LLM Vision Anbieter      | Fallback für Bild-Import (wenn kein Groq-Key)  | `Groq`                                      |
+| Groq API-Key             | API-Key für direkten Vision-Aufruf (empfohlen) | `gsk_...`                                   |
+| Groq Vision Modell       | Modell für Bilderkennung                       | `meta-llama/llama-4-scout-17b-16e-instruct` |
+| Text/Link Prompt-Modus   | Standard oder eigener Prompt                   | `Standard`                                  |
+| Eigener Text/Link-Prompt | Individuelle Anweisung an die KI               | *(vorausgefüllt)*                           |
+| Bild Prompt-Modus        | Standard oder eigener Bild-Prompt              | `Standard`                                  |
+| Eigener Bild-Prompt      | Individuelle Anweisung für Bilderkennung       | *(vorausgefüllt)*                           |
 
 3. Bestätigen – fertig. Der **📋-Button** erscheint automatisch in der Rezepte-App.
 
@@ -94,6 +94,7 @@ HA lädt die Integration automatisch neu – kein Neustart nötig.
 ### ✏️ Text
 
 Rezepttext direkt einfügen – beliebiges Format:
+
 - Fließtext aus einem Kochbuch
 - Strukturierte Zutatenlisten
 - Aus einer Webseite kopierter Text
@@ -104,11 +105,11 @@ Rezepttext direkt einfügen – beliebiges Format:
 
 ### 📁 Datei
 
-| Dateityp | Verarbeitung | Hinweis |
-|----------|-------------|---------|
-| `.txt` | Text wird direkt analysiert | Empfohlen |
-| `.jpg` `.jpeg` `.png` `.webp` `.heic` `.bmp` | Bilderkennung via Groq Vision API | Groq API-Key erforderlich |
-| `.pdf` | pypdf Textextraktion oder Bildextraktion → Groq Vision | Groq API-Key für gescannte PDFs |
+| Dateityp                                     | Verarbeitung                                           | Hinweis                         |
+| -------------------------------------------- | ------------------------------------------------------ | ------------------------------- |
+| `.txt`                                       | Text wird direkt analysiert                            | Empfohlen                       |
+| `.jpg` `.jpeg` `.png` `.webp` `.heic` `.bmp` | Bilderkennung via Groq Vision API                      | Groq API-Key erforderlich       |
+| `.pdf`                                       | pypdf Textextraktion oder Bildextraktion → Groq Vision | Groq API-Key für gescannte PDFs |
 
 ---
 
@@ -116,22 +117,20 @@ Rezepttext direkt einfügen – beliebiges Format:
 
 PDF-Dateien werden in zwei Schritten verarbeitet:
 
-**Schritt 1 – Textextraktion (pypdf):**
-Digitale PDFs (Rezepthefte, als PDF gespeicherte Webseiten) enthalten
+**Schritt 1 – Textextraktion (pypdf):** Digitale PDFs (Rezepthefte, als PDF gespeicherte Webseiten) enthalten
 maschinenlesbaren Text der direkt extrahiert und über den Konversationsagenten
 analysiert wird. Keine extra Konfiguration nötig.
 
-**Schritt 2 – Groq Vision Fallback (für gescannte PDFs):**
-Wenn kein Text gefunden wird (Foto-Scan, Kameraufnahme als PDF), wird die
+**Schritt 2 – Groq Vision Fallback (für gescannte PDFs):** Wenn kein Text gefunden wird (Foto-Scan, Kameraufnahme als PDF), wird die
 erste Seite automatisch als Bild gerendert und über die Groq Vision API
 analysiert – genau wie der direkte Bild-Import.
 
 **Voraussetzung für gescannte PDFs:** Groq API-Key in der Konfiguration eingetragen.
 
-| PDF-Typ | Verarbeitung | Voraussetzung |
-|---------|-------------|---------------|
-| Digitales PDF (Text) | pypdf → Konversationsagent | Keine |
-| Gescanntes PDF (Bild) | pypdf Bildextraktion → Groq Vision API | Groq API-Key |
+| PDF-Typ               | Verarbeitung                           | Voraussetzung |
+| --------------------- | -------------------------------------- | ------------- |
+| Digitales PDF (Text)  | pypdf → Konversationsagent             | Keine         |
+| Gescanntes PDF (Bild) | pypdf Bildextraktion → Groq Vision API | Groq API-Key  |
 
 - Maximale Dateigröße: 10 MB
 - `pypdf` wird automatisch von HA installiert
@@ -154,21 +153,22 @@ Der Bild-Import sendet das Bild direkt als base64 an die Groq Vision API –
 vollständig ohne LLM Vision. Unterstützte Formate: JPG, PNG, WEBP, HEIC, BMP.
 
 **Ablauf:**
+
 1. Datei-Tab öffnen
 2. Bild auswählen (Foto, Screenshot, Scan)
 3. „Analysieren" tippen → Groq Vision erkennt Zutaten, Schritte und alle Felder
 4. Vorschau prüfen → direkt importieren oder im Formular bearbeiten
 
-**Wenn kein Groq-Key eingetragen ist:**
-LLM Vision wird als Fallback verwendet – Ergebnis abhängig vom gewählten Anbieter:
+**Wenn kein Groq-Key eingetragen ist:** LLM Vision wird als Fallback verwendet – Ergebnis abhängig vom gewählten Anbieter:
 
-| LLM Vision Anbieter | Bild-Import |
-|---------------------|-------------|
-| Google | ❌ Bekannter Bug in v1.6.x / v1.7.0-rc.1 |
-| Groq | ❌ Bekannter Bug in v1.6.x / v1.7.0-rc.1 |
-| Anthropic / OpenAI | ⚠️ Möglicherweise funktionsfähig (ungetestet) |
+| LLM Vision Anbieter | Bild-Import                                   |
+| ------------------- | --------------------------------------------- |
+| Google              | ❌ Bekannter Bug in v1.6.x / v1.7.0-rc.1       |
+| Groq                | ❌ Bekannter Bug in v1.6.x / v1.7.0-rc.1       |
+| Anthropic / OpenAI  | ⚠️ Möglicherweise funktionsfähig (ungetestet) |
 
 Bei LLM Vision Bug als Workaround:
+
 1. **Google Lens** auf dem Smartphone
 2. Foto aufnehmen → Text erkennen lassen
 3. Text kopieren → **Text-Tab** nutzen
@@ -183,14 +183,13 @@ Integration: **Google Generative AI** (in HA integriert, kein HACS nötig)
 
 Einrichten: Einstellungen → Integrationen → + → Google Generative AI → API-Key eintragen
 
-| Modell | Anfragen/Tag (kostenlos) | Empfehlung |
-|--------|--------------------------|------------|
-| `gemini-2.5-flash` | 20/Tag | ❌ Zu wenig |
-| `gemini-1.5-flash` | 1.500/Tag | ✅ Empfohlen |
-| `gemini-2.5-flash-lite` | höher | ✅ Gute Alternative |
+| Modell                  | Anfragen/Tag (kostenlos) | Empfehlung         |
+| ----------------------- | ------------------------ | ------------------ |
+| `gemini-2.5-flash`      | 20/Tag                   | ❌ Zu wenig         |
+| `gemini-1.5-flash`      | 1.500/Tag                | ✅ Empfohlen        |
+| `gemini-2.5-flash-lite` | höher                    | ✅ Gute Alternative |
 
-**Modell wechseln:**
-Einstellungen → Integrationen → Google Gemini → Konfigurieren → Modell
+**Modell wechseln:** Einstellungen → Integrationen → Google Gemini → Konfigurieren → Modell
 
 ---
 
@@ -202,14 +201,13 @@ Einstellungen → Integrationen → Google Gemini → Konfigurieren → Modell
 2. Einstellungen → Integrationen → + → Groq → API-Key eintragen
 3. In Rezepte Import: Konversationsagent auf `conversation.groq` setzen
 
-**Für Bild-Import:**
-Groq API-Key direkt in der Rezepte Import Konfiguration eintragen
+**Für Bild-Import:** Groq API-Key direkt in der Rezepte Import Konfiguration eintragen
 (unabhängig davon ob Groq als Konversationsagent eingerichtet ist).
 
-| Modell | Anfragen/Minute (kostenlos) |
-|--------|----------------------------|
-| `llama-3.3-70b-versatile` | 30 |
-| `llama-3.1-8b-instant` | 30 (schneller) |
+| Modell                    | Anfragen/Minute (kostenlos) |
+| ------------------------- | --------------------------- |
+| `llama-3.3-70b-versatile` | 30                          |
+| `llama-3.1-8b-instant`    | 30 (schneller)              |
 
 ---
 
@@ -249,6 +247,7 @@ Web-App → HA REST API → rezepte_import.*
 ```
 
 Die eingebaute **Struktur-Validierung** korrigiert automatisch:
+
 - Fehlende Pflichtfelder → werden mit Standardwerten befüllt
 - Ungültige Einheiten → werden auf bekannte Einheiten gemappt (g, kg, ml, l, TL, EL, Stk., Prise, n.B.)
 - Falsche Datentypen → werden konvertiert
@@ -259,15 +258,15 @@ Nach dem Import: Vorschau anzeigen → direkt speichern oder zuerst im Formular 
 
 ## Fehlerbehebung
 
-| Fehler | Ursache | Lösung |
-|--------|---------|--------|
-| „429 Too Many Requests" | API-Kontingent erschöpft | Auf `gemini-1.5-flash` wechseln oder warten |
-| „High demand / Please try again later" | Gemini Rate Limit (Tageskontingent) | Auf `gemini-1.5-flash` wechseln |
-| „Kein gültiges JSON gefunden" | KI antwortete kein reines JSON | Erneut versuchen |
-| „list object has no attribute split" | LLM Vision Bug 1.6.x / 1.7.0-rc | Groq API-Key eintragen → Bild-Import läuft direkt über Groq Vision |
-| „Action not found" | HA-Aktion in dieser Version entfernt | Groq API-Key für Bilder verwenden |
-| Bild-Import: leeres Rezept | Bild unleserlich oder kein Rezept erkennbar | Google Lens → Text-Tab |
-| Link: leeres Rezept | JavaScript-gerenderte Seite ohne JSON-LD | Seitentext manuell kopieren → Text-Tab |
+| Fehler                                 | Ursache                                     | Lösung                                                             |
+| -------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------ |
+| „429 Too Many Requests"                | API-Kontingent erschöpft                    | Auf `gemini-1.5-flash` wechseln oder warten                        |
+| „High demand / Please try again later" | Gemini Rate Limit (Tageskontingent)         | Auf `gemini-1.5-flash` wechseln                                    |
+| „Kein gültiges JSON gefunden"          | KI antwortete kein reines JSON              | Erneut versuchen                                                   |
+| „list object has no attribute split"   | LLM Vision Bug 1.6.x / 1.7.0-rc             | Groq API-Key eintragen → Bild-Import läuft direkt über Groq Vision |
+| „Action not found"                     | HA-Aktion in dieser Version entfernt        | Groq API-Key für Bilder verwenden                                  |
+| Bild-Import: leeres Rezept             | Bild unleserlich oder kein Rezept erkennbar | Google Lens → Text-Tab                                             |
+| Link: leeres Rezept                    | JavaScript-gerenderte Seite ohne JSON-LD    | Seitentext manuell kopieren → Text-Tab                             |
 
 ---
 

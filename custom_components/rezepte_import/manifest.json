@@ -1,7 +1,7 @@
 {
   "domain": "rezepte_import",
   "name": "Rezepte Import",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "documentation": "https://github.com/DEIN_USERNAME/ha-rezepte-import",
   "requirements": [
     "json-repair>=0.29.0",

@@ -41,6 +41,9 @@ Format:
 
 Regeln: amount=Zahl, unit eines von: g kg ml l TL EL Stk. Prise n.B.
 timerSec=Sekunden (0 wenn kein Timer). Kein Rezept erkennbar: title="Kein Rezept erkannt" ingredients=[] steps=[].
+WICHTIG fuer steps.text: KEINE Mengenangaben in den Schritten (keine Zahlen wie "200g" oder "3 EL").
+Verwende stattdessen nur Bezeichnungen wie "das Mehl", "die Butter", "das Oel".
+Die Mengen stehen bereits in der Zutatenliste und werden automatisch skaliert.
 ANTWORTE NUR MIT JSON.
 
 Rezepttext:

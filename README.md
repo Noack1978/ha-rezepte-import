@@ -273,3 +273,12 @@ Nach dem Import: Vorschau anzeigen → direkt speichern oder zuerst im Formular 
 ## Lizenz
 
 MIT
+
+
+## Changelog
+
+### v1.1.2
+- Import-Prompt: Keine Mengenangaben mehr in Kochschritten –
+  KI verwendet jetzt nur Bezeichnungen wie „das Mehl", „die Butter".
+  Die Mengen stehen in der Zutatenliste und werden automatisch skaliert.
+

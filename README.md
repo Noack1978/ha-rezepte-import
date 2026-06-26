@@ -37,7 +37,7 @@ Rezepte Import Konfiguration eingetragen wird (kein separater HA-Agent nötig).
 2. API Keys → Create API Key
 3. Key kopieren → in Rezepte Import Konfiguration eintragen
 
-**Empfohlenes Vision-Modell:** `meta-llama/llama-4-scout-17b-16e-instruct`
+**Empfohlenes Vision-Modell:** `meta-llama/llama-4-maverick-17b-128e-instruct`
 
 Fallback (wenn kein Key eingetragen): LLM Vision Integration. **Hinweis:** LLM Vision 1.6.0 und 1.7.0-rc.1 haben einen bekannten Bug
 (`'list' object has no attribute 'split'`) der den Bild-Import verhindert.
@@ -73,7 +73,7 @@ dann HA neu starten.
 | Konversationsagent       | entity\_id des Agenten für Text/Link-Import    | `conversation.google_generative_ai`         |
 | LLM Vision Anbieter      | Fallback für Bild-Import (wenn kein Groq-Key)  | `Groq`                                      |
 | Groq API-Key             | API-Key für direkten Vision-Aufruf (empfohlen) | `gsk_...`                                   |
-| Groq Vision Modell       | Modell für Bilderkennung                       | `meta-llama/llama-4-scout-17b-16e-instruct` |
+| Groq Vision Modell       | Modell für Bilderkennung                       | `meta-llama/llama-4-maverick-17b-128e-instruct` |
 | Text/Link Prompt-Modus   | Standard oder eigener Prompt                   | `Standard`                                  |
 | Eigener Text/Link-Prompt | Individuelle Anweisung an die KI               | *(vorausgefüllt)*                           |
 | Bild Prompt-Modus        | Standard oder eigener Bild-Prompt              | `Standard`                                  |
@@ -204,10 +204,12 @@ Einrichten: Einstellungen → Integrationen → + → Google Generative AI → A
 **Für Bild-Import:** Groq API-Key direkt in der Rezepte Import Konfiguration eintragen
 (unabhängig davon ob Groq als Konversationsagent eingerichtet ist).
 
-| Modell                    | Anfragen/Minute (kostenlos) |
-| ------------------------- | --------------------------- |
-| `llama-3.3-70b-versatile` | 30                          |
-| `llama-3.1-8b-instant`    | 30 (schneller)              |
+| Modell                    | RPM (kostenlos) | RPD (kostenlos) |
+| ------------------------- | --------------- | --------------- |
+| `llama-3.3-70b-versatile` | 30              | 1.000/Tag       |
+| `llama-3.1-8b-instant`    | 30 (schneller)  | 14.400/Tag      |
+
+**Für Bild-Import** (Vision): `meta-llama/llama-4-maverick-17b-128e-instruct` hat reduzierte Limits: 15 RPM / 500 RPD (kostenlos).
 
 ---
 
@@ -276,6 +278,10 @@ MIT
 
 
 ## Changelog
+
+### v1.1.3
+- Groq Vision-Modell aktualisiert: `llama-4-scout-17b-16e-instruct` → `llama-4-maverick-17b-128e-instruct`
+  (Scout wird von Groq zum 17. Juli 2026 eingestellt)
 
 ### v1.1.2
 - Import-Prompt: Keine Mengenangaben mehr in Kochschritten –

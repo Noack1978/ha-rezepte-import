@@ -95,7 +95,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     prompt_base    = _get_prompt(entry.data)
     image_prompt   = _get_image_prompt(entry.data)
     vision_api_key = entry.data.get("vision_api_key", "").strip()
-    vision_model   = entry.data.get("vision_model", "meta-llama/llama-4-scout-17b-16e-instruct").strip()
+    vision_model   = entry.data.get("vision_model", "meta-llama/llama-4-maverick-17b-128e-instruct").strip()
 
     # ── parse_text ────────────────────────────────────────────────────────────
     async def handle_parse_text(call: ServiceCall) -> None:
@@ -223,7 +223,7 @@ async def _analyze_image(
     llmvision_prov: str = "Google",
     image_prompt: str = _PROMPT_IMAGE,
     vision_api_key: str = "",
-    vision_model: str = "meta-llama/llama-4-scout-17b-16e-instruct",
+    vision_model: str = "meta-llama/llama-4-maverick-17b-128e-instruct",
 ) -> str:
     """Bild analysieren.
 

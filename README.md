@@ -279,6 +279,12 @@ MIT
 
 ## Changelog
 
+### v1.1.4
+- 🍳 Import-Prompt erkennt jetzt Airfryer-Angaben pro Schritt (Temperatur
+  °C, Zeit Minuten) und befüllt `airfryerTemp`/`airfryerTime` automatisch –
+  passend zu ha-rezepte v1.7.0. Wird nur gesetzt wenn der Schritt oder
+  das Rezept explizit Airfryer/Heißluftfritteuse erwähnt.
+
 ### v1.1.3
 - Groq Vision-Modell aktualisiert: `llama-4-scout-17b-16e-instruct` → `llama-4-maverick-17b-128e-instruct`
   (Scout wird von Groq zum 17. Juli 2026 eingestellt)

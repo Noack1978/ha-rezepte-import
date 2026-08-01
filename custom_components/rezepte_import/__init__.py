@@ -35,12 +35,16 @@ Format:
   "baseServings": 4,
   "servingLabel": "Portionen",
   "ingredients": [{"amount": 200, "unit": "g", "name": "Zutatname"}],
-  "steps": [{"text": "Schrittbeschreibung", "timerSec": 300}],
+  "steps": [{"text": "Schrittbeschreibung", "timerSec": 300, "airfryerTemp": 0, "airfryerTime": 0}],
   "notes": ["Tipp"]
 }
 
 Regeln: amount=Zahl, unit eines von: g kg ml l TL EL Stk. Prise n.B.
 timerSec=Sekunden (0 wenn kein Timer). Kein Rezept erkennbar: title="Kein Rezept erkannt" ingredients=[] steps=[].
+airfryerTemp=Airfryer-Temperatur in Grad Celsius (0 wenn Schritt keine Airfryer-Temperaturangabe enthaelt).
+airfryerTime=Airfryer-Zeit in Minuten (0 wenn Schritt keine Airfryer-Zeitangabe enthaelt).
+Setze airfryerTemp/airfryerTime NUR wenn der Schritt explizit Heissluftfritteuse/Airfryer erwaehnt
+oder das Rezept eindeutig ein Airfryer-Rezept ist (z. B. Geraetename im subtitle enthaelt "Airfryer"/"Heissluftfritteuse").
 WICHTIG fuer steps.text: KEINE Mengenangaben in den Schritten (keine Zahlen wie "200g" oder "3 EL").
 Verwende stattdessen nur Bezeichnungen wie "das Mehl", "die Butter", "das Oel".
 Die Mengen stehen bereits in der Zutatenliste und werden automatisch skaliert.
@@ -62,11 +66,13 @@ Format:
   "baseServings": 4,
   "servingLabel": "Portionen",
   "ingredients": [{"amount": 200, "unit": "g", "name": "Zutatname"}],
-  "steps": [{"text": "Schrittbeschreibung", "timerSec": 0}],
+  "steps": [{"text": "Schrittbeschreibung", "timerSec": 0, "airfryerTemp": 0, "airfryerTime": 0}],
   "notes": []
 }
 
 Regeln: amount=Zahl, unit eines von: g kg ml l TL EL Stk. Prise n.B., timerSec=Sekunden.
+airfryerTemp=Airfryer-Temperatur in Grad Celsius, airfryerTime=Airfryer-Zeit in Minuten
+(beide 0 wenn kein Airfryer-Rezept bzw. Schritt keine Angabe enthaelt).
 ANTWORTE NUR MIT JSON."""
 
 
@@ -500,6 +506,14 @@ def _validate_recipe(r: dict) -> dict:
             step["timerSec"] = max(0, int(step.get("timerSec", 0)))
         except (ValueError, TypeError):
             step["timerSec"] = 0
+        try:
+            step["airfryerTemp"] = max(0, int(step.get("airfryerTemp", 0)))
+        except (ValueError, TypeError):
+            step["airfryerTemp"] = 0
+        try:
+            step["airfryerTime"] = max(0, int(step.get("airfryerTime", 0)))
+        except (ValueError, TypeError):
+            step["airfryerTime"] = 0
         step.setdefault("text", "")
         if step["text"]:
             cleaned_steps.append(step)

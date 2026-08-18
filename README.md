@@ -44,6 +44,9 @@ Fallback (wenn kein Key eingetragen): LLM Vision Integration. **Hinweis:** LLM V
 Der direkte Groq API-Aufruf umgeht diesen Bug vollständig.
 
 ---
+## Screenshot
+<img width="1220" height="2268" alt="1000062039" src="https://github.com/user-attachments/assets/5857ff8a-fd81-4589-828a-77e4bed55ece" />
+
 
 ## Installation
 

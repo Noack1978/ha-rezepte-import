@@ -282,6 +282,14 @@ MIT
 
 ## Changelog
 
+### v1.1.5
+- 🐛 Bugfix: `RezepteImportOptionsFlow` folgte nicht dem HA-Standardmuster –
+  hatte einen `__init__` mit `self._entry` (verbotenes Muster, verursacht
+  in neueren HA-Versionen Fehler) und erbte von `OptionsFlow` statt
+  `OptionsFlowWithReload`. `@callback`-Decorator bei `async_get_options_flow`
+  ergänzt. Reload passiert jetzt automatisch über `OptionsFlowWithReload`
+  statt manuell.
+
 ### v1.1.4
 - 🍳 Import-Prompt erkennt jetzt Airfryer-Angaben pro Schritt (Temperatur
   °C, Zeit Minuten) und befüllt `airfryerTemp`/`airfryerTime` automatisch –

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 from . import DOMAIN, AGENT_ID_DEFAULT, LLMVISION_PROVIDER_DEFAULT, _PROMPT_BASE, _PROMPT_IMAGE
@@ -109,28 +110,25 @@ class RezepteImportConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class RezepteImportOptionsFlow(config_entries.OptionsFlow):
+class RezepteImportOptionsFlow(config_entries.OptionsFlowWithReload):
     """Fallback fuer aeltere HA-Versionen ohne Reconfigure-Support."""
-
-    def __init__(self, entry: config_entries.ConfigEntry) -> None:
-        self._entry = entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         if user_input is not None:
             self.hass.config_entries.async_update_entry(
-                self._entry, data={**self._entry.data, **user_input}
+                self.config_entry, data={**self.config_entry.data, **user_input}
             )
-            await self.hass.config_entries.async_reload(self._entry.entry_id)
             return self.async_create_entry(title="", data=user_input)
         return self.async_show_form(
             step_id="init",
-            data_schema=_schema(self._entry.data),
+            data_schema=_schema(self.config_entry.data),
         )
 
     @staticmethod
+    @callback
     def async_get_options_flow(
         entry: config_entries.ConfigEntry,
     ) -> "RezepteImportOptionsFlow":
-        return RezepteImportOptionsFlow(entry)
+        return RezepteImportOptionsFlow()

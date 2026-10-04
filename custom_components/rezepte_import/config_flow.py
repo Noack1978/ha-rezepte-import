@@ -58,7 +58,7 @@ def _schema(defaults: dict) -> vol.Schema:
 
         vol.Optional(
             "vision_model",
-            default=defaults.get("vision_model", "meta-llama/llama-4-maverick-17b-128e-instruct"),
+            default=defaults.get("vision_model", "qwen/qwen3.8-27b"),
         ): selector.TextSelector(),
 
         vol.Required(

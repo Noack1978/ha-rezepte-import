@@ -94,6 +94,21 @@ def _get_image_prompt(entry_data: dict) -> str:
             return custom
     return _PROMPT_IMAGE
 
+VISION_MODEL_DEFAULT = "qwen/qwen3.8-27b"
+
+# Von Groq abgekuendigte Vision-Modelle -> automatische Migration auf das
+# aktuell unterstuetzte Modell. Siehe https://console.groq.com/docs/deprecations
+# Scout: abgekuendigt 17.07.2026. Maverick: abgekuendigt 09.03.2026 (Ersatz
+# laut Groq ist "openai/gpt-oss-120b", dieses unterstuetzt aber KEINE Bilder,
+# daher migrieren wir direkt auf das aktuelle Vision-Modell qwen/qwen3.8-27b).
+_DEPRECATED_VISION_MODELS = {
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Services einrichten."""
     agent_id       = entry.data.get("conversation_agent", AGENT_ID_DEFAULT)
@@ -101,7 +116,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     prompt_base    = _get_prompt(entry.data)
     image_prompt   = _get_image_prompt(entry.data)
     vision_api_key = entry.data.get("vision_api_key", "").strip()
-    vision_model   = entry.data.get("vision_model", "meta-llama/llama-4-maverick-17b-128e-instruct").strip()
+    vision_model   = entry.data.get("vision_model", VISION_MODEL_DEFAULT).strip()
+
+    # Automatische Migration: gespeicherter Modellname ist von Groq
+    # abgekuendigt -> auf aktuelles Vision-Modell umstellen und dauerhaft
+    # in der Config Entry speichern (sonst greift der Fix nur bis zum
+    # naechsten Neustart).
+    if vision_model in _DEPRECATED_VISION_MODELS:
+        _LOGGER.warning(
+            "Vision-Modell '%s' wurde von Groq abgekuendigt und unterstuetzt "
+            "teils keine Bilder mehr. Automatische Migration auf '%s'.",
+            vision_model, VISION_MODEL_DEFAULT,
+        )
+        vision_model = VISION_MODEL_DEFAULT
+        hass.config_entries.async_update_entry(
+            entry, data={**entry.data, "vision_model": vision_model}
+        )
 
     # ── parse_text ────────────────────────────────────────────────────────────
     async def handle_parse_text(call: ServiceCall) -> None:
@@ -229,7 +259,7 @@ async def _analyze_image(
     llmvision_prov: str = "Google",
     image_prompt: str = _PROMPT_IMAGE,
     vision_api_key: str = "",
-    vision_model: str = "meta-llama/llama-4-maverick-17b-128e-instruct",
+    vision_model: str = VISION_MODEL_DEFAULT,
 ) -> str:
     """Bild analysieren.
 

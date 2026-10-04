@@ -37,7 +37,7 @@ Rezepte Import Konfiguration eingetragen wird (kein separater HA-Agent nötig).
 2. API Keys → Create API Key
 3. Key kopieren → in Rezepte Import Konfiguration eintragen
 
-**Empfohlenes Vision-Modell:** `meta-llama/llama-4-maverick-17b-128e-instruct`
+**Empfohlenes Vision-Modell:** `qwen/qwen3.8-27b` (aktuell einziges von Groq unterstütztes Vision-Modell)
 
 Fallback (wenn kein Key eingetragen): LLM Vision Integration. **Hinweis:** LLM Vision 1.6.0 und 1.7.0-rc.1 haben einen bekannten Bug
 (`'list' object has no attribute 'split'`) der den Bild-Import verhindert.
@@ -76,7 +76,7 @@ dann HA neu starten.
 | Konversationsagent       | entity\_id des Agenten für Text/Link-Import    | `conversation.google_generative_ai`         |
 | LLM Vision Anbieter      | Fallback für Bild-Import (wenn kein Groq-Key)  | `Groq`                                      |
 | Groq API-Key             | API-Key für direkten Vision-Aufruf (empfohlen) | `gsk_...`                                   |
-| Groq Vision Modell       | Modell für Bilderkennung                       | `meta-llama/llama-4-maverick-17b-128e-instruct` |
+| Groq Vision Modell       | Modell für Bilderkennung                       | `qwen/qwen3.8-27b` |
 | Text/Link Prompt-Modus   | Standard oder eigener Prompt                   | `Standard`                                  |
 | Eigener Text/Link-Prompt | Individuelle Anweisung an die KI               | *(vorausgefüllt)*                           |
 | Bild Prompt-Modus        | Standard oder eigener Bild-Prompt              | `Standard`                                  |
@@ -212,7 +212,7 @@ Einrichten: Einstellungen → Integrationen → + → Google Generative AI → A
 | `llama-3.3-70b-versatile` | 30              | 1.000/Tag       |
 | `llama-3.1-8b-instant`    | 30 (schneller)  | 14.400/Tag      |
 
-**Für Bild-Import** (Vision): `meta-llama/llama-4-maverick-17b-128e-instruct` hat reduzierte Limits: 15 RPM / 500 RPD (kostenlos).
+**Für Bild-Import** (Vision): `qwen/qwen3.8-27b` – aktuelle Limits bitte in der [Groq-Konsole](https://console.groq.com/docs/rate-limits) prüfen, diese ändern sich häufiger als Modellnamen.
 
 ---
 
@@ -281,6 +281,19 @@ MIT
 
 
 ## Changelog
+
+### v1.2.0
+- 🚨 **Wichtig:** `meta-llama/llama-4-maverick-17b-128e-instruct` wurde von
+  Groq bereits am 9. März 2026 abgekündigt (Llama 4 Scout folgte am
+  17. Juli 2026) – Bild-Import schlug seitdem mit `404 Not Found` fehl.
+  Neues Standardmodell: **`qwen/qwen3.8-27b`**, aktuell das einzige von
+  Groq unterstützte Vision-Modell (131K Kontext, JSON-Mode, Tool-Use).
+- 🛡️ Neu: Automatische Migration beim Start der Integration – falls die
+  gespeicherte Konfiguration noch eines der abgekündigten Modelle
+  (`llama-4-scout`, `llama-4-maverick`, `gpt-oss-120b/20b`) enthält, wird
+  automatisch auf `qwen/qwen3.8-27b` umgestellt und dauerhaft gespeichert.
+  Kein manuelles Rekonfigurieren mehr nötig, auch bei künftigen
+  Abkündigungen durch Groq greift dieser Mechanismus.
 
 ### v1.1.5
 - 🐛 Bugfix: `RezepteImportOptionsFlow` folgte nicht dem HA-Standardmuster –

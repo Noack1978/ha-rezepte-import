@@ -282,6 +282,12 @@ MIT
 
 ## Changelog
 
+### v1.2.1
+- 🐛 Bugfix: Hinweistext unter dem Feld „Groq Vision Modell" in der
+  Konfiguration nannte noch das längst veraltete `llama-4-scout-17b-16e-instruct`
+  als Standard (war nie mit aktualisiert worden). Zeigt jetzt korrekt
+  `qwen/qwen3.8-27b`.
+
 ### v1.2.0
 - 🚨 **Wichtig:** `meta-llama/llama-4-maverick-17b-128e-instruct` wurde von
   Groq bereits am 9. März 2026 abgekündigt (Llama 4 Scout folgte am

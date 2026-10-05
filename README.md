@@ -282,6 +282,14 @@ MIT
 
 ## Changelog
 
+### v1.3.0
+- 🥣 Thermomix-Einstellungen gehen beim Import nicht mehr verloren: Zeile
+  „Einstellung: 10 Sek. | Stufe 10 | Temperatur: –" wird am Ende des
+  Schritttexts in Klammern übernommen, z. B. „(10 Sek. | Stufe 10)".
+  Gilt für Text- und Bildimport.
+- ⚠️ Wer einen **eigenen Prompt** (Prompt-Modus „custom") nutzt, muss die
+  Regel dort selbst ergänzen.
+
 ### v1.2.1
 - 🐛 Bugfix: Hinweistext unter dem Feld „Groq Vision Modell" in der
   Konfiguration nannte noch das längst veraltete `llama-4-scout-17b-16e-instruct`

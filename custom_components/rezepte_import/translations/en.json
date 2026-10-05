@@ -1,0 +1,58 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Rezepte Import",
+        "description": "Choose the conversation agent for text analysis and the LLM Vision provider for image analysis.",
+        "data": {
+          "conversation_agent": "Conversation agent",
+          "llmvision_provider": "LLM Vision provider (fallback)",
+          "vision_api_key": "Groq API key (image import)",
+          "vision_model": "Groq Vision model",
+          "prompt_mode": "Text / link prompt",
+          "custom_prompt": "Custom prompt (text / link)",
+          "image_prompt_mode": "Image prompt",
+          "custom_image_prompt": "Custom image prompt"
+        },
+        "data_description": {
+          "conversation_agent": "Entity ID of the conversation agent – used for text, link, TXT and PDF import. Example: conversation.google_generative_ai",
+          "llmvision_provider": "Only relevant if NO Groq API key is set. Used as a fallback for image import in that case. Note: there is a known bug with Google and Groq as LLM Vision provider.",
+          "vision_api_key": "API key for image import and scanned PDFs via the Groq Vision API. Free at console.groq.com. If set, LLM Vision is not used.",
+          "vision_model": "Groq Vision model for image import. Default: qwen/qwen3.8-27b",
+          "prompt_mode": "Choose Standard for the recommended template or Custom prompt for a custom instruction to the AI.",
+          "custom_prompt": "Custom instruction for text, link and TXT import. The recipe text is automatically appended at the end.",
+          "image_prompt_mode": "Choose Standard for the recommended template or Custom prompt for a custom instruction to the AI.",
+          "custom_image_prompt": "Custom instruction for image import. The image is passed directly to the Vision API."
+        }
+      },
+      "reconfigure": {
+        "title": "Rezepte Import – adjust settings",
+        "description": "Change conversation agent or LLM Vision provider.",
+        "data": {
+          "conversation_agent": "Conversation agent",
+          "llmvision_provider": "LLM Vision provider (fallback)",
+          "vision_api_key": "Groq API key (image import)",
+          "vision_model": "Groq Vision model",
+          "prompt_mode": "Text / link prompt",
+          "custom_prompt": "Custom prompt (text / link)",
+          "image_prompt_mode": "Image prompt",
+          "custom_image_prompt": "Custom image prompt"
+        },
+        "data_description": {
+          "conversation_agent": "Entity ID of the conversation agent – used for text, link, TXT and PDF import. Example: conversation.google_generative_ai",
+          "llmvision_provider": "Only relevant if NO Groq API key is set. Used as a fallback for image import in that case. Note: there is a known bug with Google and Groq as LLM Vision provider.",
+          "vision_api_key": "API key for image import and scanned PDFs via the Groq Vision API. Free at console.groq.com. If set, LLM Vision is not used.",
+          "vision_model": "Groq Vision model for image import. Default: qwen/qwen3.8-27b",
+          "prompt_mode": "Choose Standard for the recommended template or Custom prompt for a custom instruction to the AI.",
+          "custom_prompt": "Custom instruction for text, link and TXT import. The recipe text is automatically appended at the end.",
+          "image_prompt_mode": "Choose Standard for the recommended template or Custom prompt for a custom instruction to the AI.",
+          "custom_image_prompt": "Custom instruction for image import. The image is passed directly to the Vision API."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Rezepte Import is already configured.",
+      "reconfigure_successful": "Settings have been updated."
+    }
+  }
+}

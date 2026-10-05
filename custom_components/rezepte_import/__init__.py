@@ -45,6 +45,10 @@ airfryerTemp=Airfryer-Temperatur in Grad Celsius (0 wenn Schritt keine Airfryer-
 airfryerTime=Airfryer-Zeit in Minuten (0 wenn Schritt keine Airfryer-Zeitangabe enthaelt).
 Setze airfryerTemp/airfryerTime NUR wenn der Schritt explizit Heissluftfritteuse/Airfryer erwaehnt
 oder das Rezept eindeutig ein Airfryer-Rezept ist (z. B. Geraetename im subtitle enthaelt "Airfryer"/"Heissluftfritteuse").
+THERMOMIX: Enthaelt ein Schritt Thermomix-Einstellungen (z. B. "Einstellung: 10 Sek. | Stufe 10 | Temperatur: -"),
+haenge sie am ENDE des Schritttexts in Klammern an, z. B. "(10 Sek. | Stufe 10)" oder "(3 Min. | 100 °C | Stufe 1)"
+oder "(20 Sek. | Linkslauf | Stufe 3)". Felder mit "-" oder ohne Wert weglassen. Diese Klammer ist die EINZIGE
+Ausnahme von der Regel unten – Zeiten, Stufen und Temperaturen der Einstellung NIE weglassen.
 WICHTIG fuer steps.text: KEINE Mengenangaben in den Schritten (keine Zahlen wie "200g" oder "3 EL").
 Verwende stattdessen nur Bezeichnungen wie "das Mehl", "die Butter", "das Oel".
 Die Mengen stehen bereits in der Zutatenliste und werden automatisch skaliert.
@@ -73,6 +77,8 @@ Format:
 Regeln: amount=Zahl, unit eines von: g kg ml l TL EL Stk. Prise n.B., timerSec=Sekunden.
 airfryerTemp=Airfryer-Temperatur in Grad Celsius, airfryerTime=Airfryer-Zeit in Minuten
 (beide 0 wenn kein Airfryer-Rezept bzw. Schritt keine Angabe enthaelt).
+Thermomix-Einstellungen (Zeit, Stufe, Temperatur, Linkslauf) am Ende des Schritttexts in Klammern anfuegen,
+z. B. "(10 Sek. | Stufe 10)".
 ANTWORTE NUR MIT JSON."""
 
 
